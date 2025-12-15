@@ -9,10 +9,11 @@ import {
   Plus,
   LayoutDashboard,
   BookOpen,
-  MessageSquare,
   BarChart3,
   Users,
   Building2,
+  Settings,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +68,7 @@ interface SidebarProps {
 export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [clients, setClients] = useState<Client[]>(initialClients);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -89,10 +91,14 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
 
   const isActiveRoute = (path: string) => location.pathname === path;
 
+  const handleLogout = () => {
+    navigate("/");
+  };
+
   return (
     <motion.aside
       className={cn(
-        "h-screen bg-sidebar flex flex-col transition-all duration-300",
+        "h-screen bg-sidebar flex flex-col transition-all duration-300 relative",
         collapsed ? "w-16" : "w-64"
       )}
       initial={false}
@@ -244,11 +250,45 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
         </div>
       </div>
 
-      {/* Consultant Card */}
-      <div className="p-3 border-t border-sidebar-border">
-        <div
+      {/* Consultant Card with Menu */}
+      <div className="p-3 border-t border-sidebar-border relative">
+        <AnimatePresence>
+          {userMenuOpen && (
+            <motion.div
+              className="absolute bottom-full left-3 right-3 mb-2 bg-sidebar-accent rounded-xl shadow-elegant-lg overflow-hidden"
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+            >
+              <button
+                onClick={() => {
+                  setUserMenuOpen(false);
+                  navigate("/settings");
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sidebar-foreground hover:bg-sidebar-border/50 transition-colors"
+              >
+                <Settings className="w-4 h-4" />
+                {!collapsed && <span className="text-sm">Ajustes</span>}
+              </button>
+              <button
+                onClick={() => {
+                  setUserMenuOpen(false);
+                  handleLogout();
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-sidebar-border/50 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                {!collapsed && <span className="text-sm">Cerrar Sesión</span>}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <button
+          onClick={() => setUserMenuOpen(!userMenuOpen)}
           className={cn(
-            "rounded-xl bg-sidebar-accent/50 p-3",
+            "w-full rounded-xl bg-sidebar-accent/50 p-3 hover:bg-sidebar-accent transition-colors",
             collapsed && "p-2"
           )}
         >
@@ -261,7 +301,7 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-sidebar-primary font-medium">
                 JD
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 text-left">
                 <p className="text-sidebar-foreground text-sm font-medium truncate">
                   Juan Díaz
                 </p>
@@ -271,7 +311,7 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
               </div>
             </div>
           )}
-        </div>
+        </button>
       </div>
     </motion.aside>
   );
