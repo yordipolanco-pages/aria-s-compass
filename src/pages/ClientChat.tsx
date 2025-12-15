@@ -3,19 +3,33 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Sidebar } from "@/components/Sidebar";
 import { AriaOrb } from "@/components/AriaOrb";
+import { EditClientModal } from "@/components/EditClientModal";
+import { EditAreaModal } from "@/components/EditAreaModal";
 import {
   Plus,
-  Settings,
   Send,
   BarChart3,
   Users,
   Building2,
+  Briefcase,
+  FileText,
+  Settings,
+  Target,
   Pencil,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  chart: BarChart3,
+  users: Users,
+  building: Building2,
+  briefcase: Briefcase,
+  file: FileText,
+  settings: Settings,
+  target: Target,
+};
 
 // Mock client data
-const clientsData: Record<string, { name: string; logo: string; areas: { id: string; name: string; icon: string }[] }> = {
+const initialClientsData: Record<string, { name: string; logo: string; areas: { id: string; name: string; icon: string }[] }> = {
   "1": {
     name: "Coca-Cola",
     logo: "🥤",
@@ -38,23 +52,15 @@ const clientsData: Record<string, { name: string; logo: string; areas: { id: str
   },
 };
 
-const getAreaIcon = (iconType: string) => {
-  switch (iconType) {
-    case "chart":
-      return <BarChart3 className="w-5 h-5" />;
-    case "users":
-      return <Users className="w-5 h-5" />;
-    case "building":
-      return <Building2 className="w-5 h-5" />;
-    default:
-      return <Building2 className="w-5 h-5" />;
-  }
-};
-
 export default function ClientChat() {
-  const { clientId } = useParams();
+  const { clientId, areaId } = useParams();
   const navigate = useNavigate();
   const [message, setMessage] = useState("");
+  const [clientsData, setClientsData] = useState(initialClientsData);
+  const [editClientOpen, setEditClientOpen] = useState(false);
+  const [editAreaOpen, setEditAreaOpen] = useState(false);
+  const [editingArea, setEditingArea] = useState<{ id: string; name: string; icon: string } | null>(null);
+  const [isNewArea, setIsNewArea] = useState(false);
 
   const client = clientId ? clientsData[clientId] : null;
 
@@ -69,6 +75,59 @@ export default function ClientChat() {
     );
   }
 
+  const handleSaveClient = (name: string, logo: string) => {
+    if (clientId) {
+      setClientsData((prev) => ({
+        ...prev,
+        [clientId]: { ...prev[clientId], name, logo },
+      }));
+    }
+  };
+
+  const handleSaveArea = (name: string, icon: string) => {
+    if (clientId) {
+      if (isNewArea) {
+        const newAreaId = `${clientId}-${Date.now()}`;
+        setClientsData((prev) => ({
+          ...prev,
+          [clientId]: {
+            ...prev[clientId],
+            areas: [...prev[clientId].areas, { id: newAreaId, name, icon }],
+          },
+        }));
+      } else if (editingArea) {
+        setClientsData((prev) => ({
+          ...prev,
+          [clientId]: {
+            ...prev[clientId],
+            areas: prev[clientId].areas.map((a) =>
+              a.id === editingArea.id ? { ...a, name, icon } : a
+            ),
+          },
+        }));
+      }
+    }
+    setEditingArea(null);
+    setIsNewArea(false);
+  };
+
+  const handleAddArea = () => {
+    setIsNewArea(true);
+    setEditingArea(null);
+    setEditAreaOpen(true);
+  };
+
+  const handleEditArea = (area: { id: string; name: string; icon: string }) => {
+    setIsNewArea(false);
+    setEditingArea(area);
+    setEditAreaOpen(true);
+  };
+
+  const getAreaIcon = (iconType: string) => {
+    const IconComponent = iconMap[iconType] || Building2;
+    return <IconComponent className="w-5 h-5" />;
+  };
+
   return (
     <div className="flex min-h-screen w-full bg-pearl">
       <Sidebar />
@@ -78,8 +137,12 @@ export default function ClientChat() {
         <header className="bg-background border-b border-border px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-2xl">
-                {client.logo}
+              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-2xl overflow-hidden">
+                {client.logo.startsWith("data:") ? (
+                  <img src={client.logo} alt="Logo" className="w-full h-full object-cover" />
+                ) : (
+                  client.logo
+                )}
               </div>
               <div>
                 <h1 className="font-display text-xl text-foreground">
@@ -89,7 +152,10 @@ export default function ClientChat() {
               </div>
             </div>
 
-            <button className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+            <button
+              onClick={() => setEditClientOpen(true)}
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
               <Pencil className="w-5 h-5" />
             </button>
           </div>
@@ -143,7 +209,10 @@ export default function ClientChat() {
               <h3 className="font-display text-lg text-foreground">
                 Áreas del Cliente
               </h3>
-              <button className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors">
+              <button
+                onClick={handleAddArea}
+                className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors"
+              >
                 <Plus className="w-5 h-5" />
               </button>
             </div>
@@ -151,18 +220,27 @@ export default function ClientChat() {
             {client.areas.length > 0 ? (
               <div className="space-y-3">
                 {client.areas.map((area) => (
-                  <motion.button
+                  <motion.div
                     key={area.id}
-                    onClick={() => navigate(`/client/${clientId}/area/${area.id}`)}
                     className="w-full card-elevated p-4 flex items-center gap-3 hover:border-primary/30 transition-all group"
                     whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
                   >
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-colors">
-                      {getAreaIcon(area.icon)}
-                    </div>
-                    <span className="font-medium text-foreground">{area.name}</span>
-                  </motion.button>
+                    <button
+                      onClick={() => navigate(`/client/${clientId}/area/${area.id}`)}
+                      className="flex-1 flex items-center gap-3"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-colors">
+                        {getAreaIcon(area.icon)}
+                      </div>
+                      <span className="font-medium text-foreground">{area.name}</span>
+                    </button>
+                    <button
+                      onClick={() => handleEditArea(area)}
+                      className="p-2 rounded-lg text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground hover:bg-muted transition-all"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  </motion.div>
                 ))}
               </div>
             ) : (
@@ -170,23 +248,38 @@ export default function ClientChat() {
                 <p className="text-muted-foreground text-sm mb-4">
                   No hay áreas creadas aún
                 </p>
-                <button className="chip chip-active">
+                <button onClick={handleAddArea} className="chip chip-active">
                   <Plus className="w-4 h-4" />
                   Crear primera área
                 </button>
               </div>
             )}
-
-            {/* Client Settings */}
-            <div className="mt-8 pt-6 border-t border-border">
-              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                <Settings className="w-5 h-5" />
-                <span className="text-sm">Configuración del Cliente</span>
-              </button>
-            </div>
           </aside>
         </div>
       </main>
+
+      {/* Edit Client Modal */}
+      <EditClientModal
+        isOpen={editClientOpen}
+        onClose={() => setEditClientOpen(false)}
+        clientName={client.name}
+        clientLogo={client.logo}
+        onSave={handleSaveClient}
+      />
+
+      {/* Edit/Create Area Modal */}
+      <EditAreaModal
+        isOpen={editAreaOpen}
+        onClose={() => {
+          setEditAreaOpen(false);
+          setEditingArea(null);
+          setIsNewArea(false);
+        }}
+        areaName={editingArea?.name || ""}
+        areaIcon={editingArea?.icon || "chart"}
+        onSave={handleSaveArea}
+        isNew={isNewArea}
+      />
     </div>
   );
 }
