@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { 
   BookOpen, 
   Building2, 
@@ -11,14 +10,14 @@ import {
   Lock,
   Shield,
   Plus,
-  MoreVertical,
-  Trash2,
   Download
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
+import { UploadDocumentModal } from "@/components/UploadDocumentModal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Document {
   id: string;
@@ -29,7 +28,7 @@ interface Document {
   privacy: "public" | "private" | "confidential";
 }
 
-interface Folder {
+interface FolderData {
   id: string;
   name: string;
   documents: Document[];
@@ -40,12 +39,12 @@ interface ClientKB {
   id: string;
   name: string;
   logo: string;
-  folders: Folder[];
+  folders: FolderData[];
   isExpanded: boolean;
 }
 
 // Mock data for firm knowledge base
-const firmFolders: Folder[] = [
+const firmFolders: FolderData[] = [
   {
     id: "f1",
     name: "Frameworks de Estrategia",
@@ -165,6 +164,7 @@ export default function KnowledgeBase() {
   const [clientData, setClientData] = useState(clientKBs);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"firm" | "clients">("firm");
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   const toggleFirmFolder = (folderId: string) => {
     setFirmData((prev) =>
@@ -193,6 +193,65 @@ export default function KnowledgeBase() {
     );
   };
 
+  // Build knowledge bases for the upload modal
+  const knowledgeBases = [
+    {
+      id: "firm",
+      name: "Metodologías Numericit",
+      type: "firm" as const,
+      folders: firmData.map((f) => ({ id: f.id, name: f.name })),
+    },
+    ...clientData.map((client) => ({
+      id: client.id,
+      name: client.name,
+      logo: client.logo,
+      type: "client" as const,
+      folders: client.folders.map((f) => ({ id: f.id, name: f.name })),
+    })),
+  ];
+
+  const handleUpload = (file: File, kbId: string, folderId: string) => {
+    // Simulate upload
+    const newDoc: Document = {
+      id: `new-${Date.now()}`,
+      name: file.name,
+      type: file.name.split(".").pop() as "pdf" | "xlsx" | "docx" | "pptx",
+      size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
+      date: new Date().toISOString().split("T")[0],
+      privacy: "private",
+    };
+
+    if (kbId === "firm") {
+      setFirmData((prev) =>
+        prev.map((f) =>
+          f.id === folderId
+            ? { ...f, documents: [...f.documents, newDoc], isExpanded: true }
+            : f
+        )
+      );
+    } else {
+      setClientData((prev) =>
+        prev.map((c) =>
+          c.id === kbId
+            ? {
+                ...c,
+                isExpanded: true,
+                folders: c.folders.map((f) =>
+                  f.id === folderId
+                    ? { ...f, documents: [...f.documents, newDoc], isExpanded: true }
+                    : f
+                ),
+              }
+            : c
+        )
+      );
+    }
+
+    toast.success("Documento subido exitosamente", {
+      description: `${file.name} se agregó a la base de conocimiento.`,
+    });
+  };
+
   return (
     <div className="flex min-h-screen bg-background w-full">
       <Sidebar />
@@ -203,10 +262,10 @@ export default function KnowledgeBase() {
           <div className="px-8 py-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="font-title text-3xl text-foreground mb-1">Base de Conocimiento</h1>
+                <h1 className="font-display text-3xl text-foreground mb-1">Base de Conocimiento</h1>
                 <p className="text-muted-foreground">Gestiona documentos de la firma y clientes</p>
               </div>
-              <Button className="gap-2">
+              <Button className="gap-2" onClick={() => setUploadModalOpen(true)}>
                 <Upload className="w-4 h-4" />
                 Subir Documento
               </Button>
@@ -264,7 +323,7 @@ export default function KnowledgeBase() {
                     <BookOpen className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="font-title text-xl text-foreground">Metodologías Numericit</h2>
+                    <h2 className="font-display text-xl text-foreground">Metodologías Numericit</h2>
                     <p className="text-sm text-muted-foreground">Biblioteca global de la firma</p>
                   </div>
                 </div>
@@ -275,11 +334,9 @@ export default function KnowledgeBase() {
               </div>
 
               {firmData.map((folder) => (
-                <motion.div
+                <div
                   key={folder.id}
                   className="bg-card rounded-xl border border-border overflow-hidden"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
                 >
                   <button
                     onClick={() => toggleFirmFolder(folder.id)}
@@ -315,7 +372,7 @@ export default function KnowledgeBase() {
                       ))}
                     </div>
                   )}
-                </motion.div>
+                </div>
               ))}
             </div>
           ) : (
@@ -327,18 +384,16 @@ export default function KnowledgeBase() {
                     <Building2 className="w-5 h-5 text-accent" />
                   </div>
                   <div>
-                    <h2 className="font-title text-xl text-foreground">Bases de Clientes</h2>
+                    <h2 className="font-display text-xl text-foreground">Bases de Clientes</h2>
                     <p className="text-sm text-muted-foreground">Documentos por cliente y área</p>
                   </div>
                 </div>
               </div>
 
               {clientData.map((client) => (
-                <motion.div
+                <div
                   key={client.id}
                   className="bg-card rounded-xl border border-border overflow-hidden"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
                 >
                   {/* Client Header */}
                   <button
@@ -406,12 +461,20 @@ export default function KnowledgeBase() {
                       ))}
                     </div>
                   )}
-                </motion.div>
+                </div>
               ))}
             </div>
           )}
         </div>
       </main>
+
+      {/* Upload Document Modal */}
+      <UploadDocumentModal
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        knowledgeBases={knowledgeBases}
+        onUpload={handleUpload}
+      />
     </div>
   );
 }

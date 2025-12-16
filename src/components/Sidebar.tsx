@@ -12,7 +12,6 @@ import {
   Building2,
   Settings,
   LogOut,
-  MoreHorizontal,
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -68,16 +67,13 @@ interface SidebarProps {
 
 export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [addClientOpen, setAddClientOpen] = useState(false);
   const [hoveredClientId, setHoveredClientId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Effective collapsed state - collapsed but expanded on hover
-  const isEffectivelyCollapsed = collapsed && !isHovering;
 
   const toggleClient = (clientId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -98,7 +94,14 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
 
   const handleDeleteClient = (clientId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setClients((prev) => prev.filter((c) => c.id !== clientId));
+    if (deleteConfirmId === clientId) {
+      setClients((prev) => prev.filter((c) => c.id !== clientId));
+      setDeleteConfirmId(null);
+    } else {
+      setDeleteConfirmId(clientId);
+      // Auto-clear after 2 seconds
+      setTimeout(() => setDeleteConfirmId(null), 2000);
+    }
   };
 
   const handleAddClient = (newClient: { name: string; logo: string }) => {
@@ -120,56 +123,38 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
 
   return (
     <>
-      <motion.aside
+      <aside
         className={cn(
-          "h-screen bg-sidebar flex flex-col relative overflow-hidden"
+          "h-screen bg-sidebar flex flex-col relative overflow-hidden transition-all duration-300 ease-out",
+          collapsed ? "w-16" : "w-64"
         )}
-        initial={false}
-        animate={{ 
-          width: isEffectivelyCollapsed ? 64 : 256 
-        }}
-        transition={{ 
-          type: "spring", 
-          stiffness: 300, 
-          damping: 30 
-        }}
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
-        onClick={() => {
-          if (collapsed && !isHovering) {
-            setCollapsed(false);
-          }
-        }}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-sidebar-border min-h-[65px]">
-          <motion.span
-            className="text-sidebar-foreground font-body text-lg tracking-wider whitespace-nowrap"
-            animate={{ opacity: isEffectivelyCollapsed ? 1 : 1 }}
-          >
+          <span className="text-sidebar-foreground font-body text-lg tracking-wider whitespace-nowrap">
             n<span className="text-sidebar-primary">+</span>
-          </motion.span>
+          </span>
           
-          <AnimatePresence>
-            {!isEffectivelyCollapsed && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.15 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCollapsed(!collapsed);
-                }}
-                className="p-2 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-              >
-                <ChevronRight className={cn(
-                  "w-5 h-5 transition-transform duration-200",
-                  !collapsed && "rotate-180"
-                )} />
-              </motion.button>
-            )}
-          </AnimatePresence>
+          {!collapsed && (
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="p-2 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+            >
+              <ChevronRight className={cn(
+                "w-5 h-5 transition-transform duration-200",
+                !collapsed && "rotate-180"
+              )} />
+            </button>
+          )}
+          
+          {collapsed && (
+            <button
+              onClick={() => setCollapsed(false)}
+              className="p-2 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Navigation */}
@@ -180,25 +165,20 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
               onClick={() => navigate("/dashboard")}
               className={cn(
                 "w-full sidebar-item",
-                isEffectivelyCollapsed && "justify-center px-0",
+                collapsed && "justify-center px-0",
                 isActiveRoute("/dashboard") && "sidebar-item-active"
               )}
             >
               <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
-              {!isEffectivelyCollapsed && <span>Dashboard</span>}
+              {!collapsed && <span>Dashboard</span>}
             </button>
           </div>
 
           {/* Clients Section */}
-          {!isEffectivelyCollapsed && (
-            <motion.p 
-              className="px-4 text-xs font-medium text-sidebar-foreground/50 uppercase tracking-wider mb-3"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1 }}
-            >
+          {!collapsed && (
+            <p className="px-4 text-xs font-medium text-sidebar-foreground/50 uppercase tracking-wider mb-3">
               Clientes
-            </motion.p>
+            </p>
           )}
 
           <div className="space-y-1 px-2">
@@ -208,13 +188,18 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
                 <div 
                   className="flex items-center group"
                   onMouseEnter={() => setHoveredClientId(client.id)}
-                  onMouseLeave={() => setHoveredClientId(null)}
+                  onMouseLeave={() => {
+                    setHoveredClientId(null);
+                    if (deleteConfirmId === client.id) {
+                      setDeleteConfirmId(null);
+                    }
+                  }}
                 >
                   <button
                     onClick={() => handleClientClick(client)}
                     className={cn(
                       "flex-1 sidebar-item",
-                      isEffectivelyCollapsed && "justify-center px-0",
+                      collapsed && "justify-center px-0",
                       isActiveRoute(`/client/${client.id}`) && "sidebar-item-active"
                     )}
                   >
@@ -222,31 +207,29 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
                     <div className="w-7 h-7 rounded-lg bg-sidebar-accent flex items-center justify-center text-sm flex-shrink-0">
                       {client.logo}
                     </div>
-                    {!isEffectivelyCollapsed && (
+                    {!collapsed && (
                       <span className="truncate flex-1 text-left">{client.name}</span>
                     )}
                   </button>
                   
-                  {/* More Options (visible on hover) */}
-                  {!isEffectivelyCollapsed && (
-                    <AnimatePresence>
-                      {hoveredClientId === client.id && (
-                        <motion.button
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          onClick={(e) => handleDeleteClient(client.id, e)}
-                          className="p-1.5 rounded-md text-sidebar-foreground/50 hover:text-red-400 hover:bg-red-500/10 transition-colors mr-1"
-                          title="Eliminar cliente"
-                        >
-                          <MoreHorizontal className="w-4 h-4" />
-                        </motion.button>
+                  {/* Delete Button (visible on hover) */}
+                  {!collapsed && hoveredClientId === client.id && (
+                    <button
+                      onClick={(e) => handleDeleteClient(client.id, e)}
+                      className={cn(
+                        "p-1.5 rounded-md transition-colors mr-1",
+                        deleteConfirmId === client.id
+                          ? "text-red-400 bg-red-500/20"
+                          : "text-sidebar-foreground/50 hover:text-red-400 hover:bg-red-500/10"
                       )}
-                    </AnimatePresence>
+                      title={deleteConfirmId === client.id ? "Confirmar eliminación" : "Eliminar cliente"}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   )}
                   
                   {/* Expand/Collapse Button */}
-                  {!isEffectivelyCollapsed && client.areas.length > 0 && (
+                  {!collapsed && client.areas.length > 0 && (
                     <button
                       onClick={(e) => toggleClient(client.id, e)}
                       className="p-1.5 rounded-md text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
@@ -262,17 +245,12 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
 
                 {/* Areas */}
                 <AnimatePresence>
-                  {client.isExpanded && !isEffectivelyCollapsed && (
+                  {client.isExpanded && !collapsed && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ 
-                        type: "spring", 
-                        stiffness: 300, 
-                        damping: 30,
-                        opacity: { duration: 0.2 }
-                      }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
                       className="overflow-hidden"
                     >
                       <div className="ml-6 mt-1 space-y-1 border-l border-sidebar-border pl-3">
@@ -297,40 +275,34 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
             ))}
 
             {/* Add Client Button */}
-            {!isEffectivelyCollapsed && (
-              <motion.button 
+            {!collapsed && (
+              <button 
                 onClick={() => setAddClientOpen(true)}
                 className="w-full sidebar-item text-sidebar-foreground/50 hover:text-sidebar-foreground mt-2"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
               >
                 <Plus className="w-4 h-4" />
                 <span>Nuevo Cliente</span>
-              </motion.button>
+              </button>
             )}
           </div>
 
           {/* Knowledge Base */}
           <div className="px-2 mt-6">
-            {!isEffectivelyCollapsed && (
-              <motion.p 
-                className="px-2 text-xs font-medium text-sidebar-foreground/50 uppercase tracking-wider mb-3"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
+            {!collapsed && (
+              <p className="px-2 text-xs font-medium text-sidebar-foreground/50 uppercase tracking-wider mb-3">
                 Recursos
-              </motion.p>
+              </p>
             )}
             <button
               onClick={() => navigate("/knowledge")}
               className={cn(
                 "w-full sidebar-item",
-                isEffectivelyCollapsed && "justify-center px-0",
+                collapsed && "justify-center px-0",
                 isActiveRoute("/knowledge") && "sidebar-item-active"
               )}
             >
               <BookOpen className="w-5 h-5 flex-shrink-0" />
-              {!isEffectivelyCollapsed && <span>Base de Conocimiento</span>}
+              {!collapsed && <span>Base de Conocimiento</span>}
             </button>
           </div>
         </div>
@@ -338,13 +310,13 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
         {/* Consultant Card with Menu */}
         <div className="p-3 border-t border-sidebar-border relative">
           <AnimatePresence>
-            {userMenuOpen && !isEffectivelyCollapsed && (
+            {userMenuOpen && !collapsed && (
               <motion.div
-                className="absolute bottom-full left-3 right-3 mb-2 bg-sidebar-accent rounded-xl shadow-elegant-lg overflow-hidden"
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                className="absolute bottom-full left-3 right-3 mb-2 bg-sidebar-accent rounded-xl shadow-elevated-lg overflow-hidden"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.15 }}
               >
                 <button
                   onClick={() => {
@@ -374,10 +346,10 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
             onClick={() => setUserMenuOpen(!userMenuOpen)}
             className={cn(
               "w-full rounded-xl bg-sidebar-accent/50 p-3 hover:bg-sidebar-accent transition-colors",
-              isEffectivelyCollapsed && "p-2"
+              collapsed && "p-2"
             )}
           >
-            {isEffectivelyCollapsed ? (
+            {collapsed ? (
               <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sidebar-primary text-sm font-medium">
                 JD
               </div>
@@ -398,7 +370,7 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
             )}
           </button>
         </div>
-      </motion.aside>
+      </aside>
 
       {/* Add Client Modal */}
       <AddClientModal

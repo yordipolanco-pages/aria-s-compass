@@ -57,12 +57,7 @@ export default function Dashboard() {
       <main className="flex-1 overflow-y-auto">
         <div className="p-8 lg:p-12 max-w-7xl mx-auto">
           {/* Header */}
-          <motion.div
-            className="mb-10"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <div className="mb-10">
             <div className="flex items-center gap-4 mb-2">
               <AriaOrb size="sm" />
               <h1 className="font-display text-3xl lg:text-4xl text-foreground">
@@ -72,17 +67,13 @@ export default function Dashboard() {
             <p className="text-muted-foreground font-body text-lg">
               ¿En qué nos enfocamos hoy?
             </p>
-          </motion.div>
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Main Content */}
             <div className="lg:col-span-2 space-y-8">
               {/* Prompt Selector */}
-              <motion.section
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-              >
+              <section>
                 <h2 className="font-display text-xl text-foreground mb-4">
                   Acciones Rápidas
                 </h2>
@@ -90,36 +81,27 @@ export default function Dashboard() {
                   activePrompt={activePrompt}
                   onSelect={setActivePrompt}
                 />
-              </motion.section>
+              </section>
 
               {/* Tools Grid */}
-              <motion.section
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
+              <section>
                 <h2 className="font-display text-xl text-foreground mb-4">
                   Herramientas de Operación
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {tools.map((tool, index) => (
+                  {tools.map((tool) => (
                     <ToolCard
                       key={tool.id}
                       title={tool.title}
                       description={tool.description}
                       icon={tool.icon}
-                      delay={0.3 + index * 0.1}
                     />
                   ))}
                 </div>
-              </motion.section>
+              </section>
 
               {/* Chat Input Preview */}
-              <motion.section
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-              >
+              <section>
                 <div className="card-elevated-md p-6">
                   <div className="flex items-center gap-4">
                     <input
@@ -132,18 +114,12 @@ export default function Dashboard() {
                     </button>
                   </div>
                 </div>
-              </motion.section>
+              </section>
             </div>
 
             {/* Right Column - Activity Feed */}
             <div className="lg:col-span-1">
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-              >
-                <ActivityFeed />
-              </motion.div>
+              <ActivityFeed />
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar } from "@/components/Sidebar";
 import { AriaOrb } from "@/components/AriaOrb";
 import { EditClientModal } from "@/components/EditClientModal";
@@ -16,7 +16,10 @@ import {
   Settings,
   Target,
   Pencil,
+  ChevronRight,
+  ChevronLeft,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   chart: BarChart3,
@@ -61,8 +64,10 @@ export default function ClientChat() {
   const [editAreaOpen, setEditAreaOpen] = useState(false);
   const [editingArea, setEditingArea] = useState<{ id: string; name: string; icon: string } | null>(null);
   const [isNewArea, setIsNewArea] = useState(false);
+  const [areasSidebarCollapsed, setAreasSidebarCollapsed] = useState(false);
 
   const client = clientId ? clientsData[clientId] : null;
+  const currentArea = areaId ? client?.areas.find(a => a.id === areaId) : null;
 
   if (!client) {
     return (
@@ -128,9 +133,15 @@ export default function ClientChat() {
     return <IconComponent className="w-5 h-5" />;
   };
 
+  // Determine chat context
+  const chatTitle = currentArea ? `${currentArea.name} - ${client.name}` : `Chat General - ${client.name}`;
+  const chatSubtitle = currentArea 
+    ? `Chat específico del área de ${currentArea.name}` 
+    : "Aquí puedes hacer consultas generales sobre este cliente.";
+
   return (
     <div className="flex min-h-screen w-full bg-pearl">
-      <Sidebar />
+      <Sidebar activeArea={areaId} />
 
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
@@ -145,10 +156,22 @@ export default function ClientChat() {
                 )}
               </div>
               <div>
-                <h1 className="font-display text-xl text-foreground">
-                  {client.name}
-                </h1>
-                <p className="text-muted-foreground text-sm">Chat General</p>
+                <div className="flex items-center gap-2">
+                  <h1 className="font-display text-xl text-foreground">
+                    {client.name}
+                  </h1>
+                  {currentArea && (
+                    <>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-display text-xl text-accent">
+                        {currentArea.name}
+                      </span>
+                    </>
+                  )}
+                </div>
+                <p className="text-muted-foreground text-sm">
+                  {currentArea ? `Área: ${currentArea.name}` : "Chat General"}
+                </p>
               </div>
             </div>
 
@@ -167,21 +190,17 @@ export default function ClientChat() {
           <div className="flex-1 flex flex-col">
             {/* Empty State / Welcome */}
             <div className="flex-1 flex items-center justify-center p-8">
-              <motion.div
-                className="text-center max-w-md"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
+              <div className="text-center max-w-md">
                 <AriaOrb size="md" className="mx-auto mb-6" />
                 <h2 className="font-display text-2xl text-foreground mb-2">
-                  Chat General - {client.name}
+                  {chatTitle}
                 </h2>
                 <p className="text-muted-foreground mb-8">
-                  Aquí puedes hacer consultas generales sobre este cliente.
-                  Aria+ tiene acceso a toda la información del cliente.
+                  {chatSubtitle}
+                  {!currentArea && " Aria+ tiene acceso a toda la información del cliente."}
+                  {currentArea && ` Aria+ tiene acceso a los documentos de ${currentArea.name}.`}
                 </p>
-              </motion.div>
+              </div>
             </div>
 
             {/* Chat Input */}
@@ -192,7 +211,7 @@ export default function ClientChat() {
                     type="text"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Escribe tu consulta..."
+                    placeholder={currentArea ? `Escribe tu consulta sobre ${currentArea.name}...` : "Escribe tu consulta..."}
                     className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/50 font-body"
                   />
                   <button className="p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
@@ -204,56 +223,121 @@ export default function ClientChat() {
           </div>
 
           {/* Areas Sidebar */}
-          <aside className="w-80 bg-background border-l border-border p-6 overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-display text-lg text-foreground">
-                Áreas del Cliente
-              </h3>
-              <button
-                onClick={handleAddArea}
-                className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
-            </div>
-
-            {client.areas.length > 0 ? (
-              <div className="space-y-3">
-                {client.areas.map((area) => (
-                  <motion.div
-                    key={area.id}
-                    className="w-full card-elevated p-4 flex items-center gap-3 hover:border-primary/30 transition-all group"
-                    whileHover={{ scale: 1.01 }}
-                  >
-                    <button
-                      onClick={() => navigate(`/client/${clientId}/area/${area.id}`)}
-                      className="flex-1 flex items-center gap-3"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-colors">
-                        {getAreaIcon(area.icon)}
-                      </div>
-                      <span className="font-medium text-foreground">{area.name}</span>
-                    </button>
-                    <button
-                      onClick={() => handleEditArea(area)}
-                      className="p-2 rounded-lg text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground hover:bg-muted transition-all"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground text-sm mb-4">
-                  No hay áreas creadas aún
-                </p>
-                <button onClick={handleAddArea} className="chip chip-active">
-                  <Plus className="w-4 h-4" />
-                  Crear primera área
-                </button>
-              </div>
+          <aside 
+            className={cn(
+              "bg-background border-l border-border overflow-y-auto transition-all duration-300 ease-out relative",
+              areasSidebarCollapsed ? "w-0" : "w-80"
             )}
+          >
+            {/* Collapse Toggle */}
+            <button
+              onClick={() => setAreasSidebarCollapsed(!areasSidebarCollapsed)}
+              className="absolute -left-3 top-6 z-10 w-6 h-6 bg-background border border-border rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              {areasSidebarCollapsed ? (
+                <ChevronLeft className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+            </button>
+
+            <AnimatePresence>
+              {!areasSidebarCollapsed && (
+                <motion.div
+                  className="p-6"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="font-display text-lg text-foreground">
+                      Áreas del Cliente
+                    </h3>
+                    <button
+                      onClick={handleAddArea}
+                      className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* General Chat Link */}
+                  <div className="mb-4">
+                    <button
+                      onClick={() => navigate(`/client/${clientId}`)}
+                      className={cn(
+                        "w-full card-elevated p-4 flex items-center gap-3 transition-all",
+                        !areaId && "border-2 border-primary/30 bg-primary/5"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+                        !areaId ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                      )}>
+                        <Building2 className="w-5 h-5" />
+                      </div>
+                      <span className={cn(
+                        "font-medium",
+                        !areaId ? "text-primary" : "text-foreground"
+                      )}>
+                        Chat General
+                      </span>
+                    </button>
+                  </div>
+
+                  {client.areas.length > 0 ? (
+                    <div className="space-y-3">
+                      {client.areas.map((area) => (
+                        <div
+                          key={area.id}
+                          className={cn(
+                            "w-full card-elevated p-4 flex items-center gap-3 transition-all group",
+                            areaId === area.id && "border-2 border-accent/30 bg-accent/5"
+                          )}
+                        >
+                          <button
+                            onClick={() => navigate(`/client/${clientId}/area/${area.id}`)}
+                            className="flex-1 flex items-center gap-3"
+                          >
+                            <div className={cn(
+                              "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+                              areaId === area.id 
+                                ? "bg-accent/20 text-accent" 
+                                : "bg-primary/10 text-primary group-hover:bg-primary/20"
+                            )}>
+                              {getAreaIcon(area.icon)}
+                            </div>
+                            <span className={cn(
+                              "font-medium",
+                              areaId === area.id ? "text-accent" : "text-foreground"
+                            )}>
+                              {area.name}
+                            </span>
+                          </button>
+                          <button
+                            onClick={() => handleEditArea(area)}
+                            className="p-2 rounded-lg text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground hover:bg-muted transition-all"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground text-sm mb-4">
+                        No hay áreas creadas aún
+                      </p>
+                      <button onClick={handleAddArea} className="chip chip-active">
+                        <Plus className="w-4 h-4" />
+                        Crear primera área
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </aside>
         </div>
       </main>
