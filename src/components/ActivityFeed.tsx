@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { Clock } from "lucide-react";
 
 interface Activity {
@@ -42,18 +41,15 @@ const activities: Activity[] = [
 
 export function ActivityFeed() {
   return (
-    <div className="bg-card rounded-2xl p-6 shadow-soft h-full">
+    <div className="bg-card rounded-2xl p-6 shadow-soft">
       <h3 className="font-display text-lg text-foreground mb-4">
         Actividad Reciente
       </h3>
       <div className="space-y-4">
-        {activities.map((activity, index) => (
-          <motion.div
+        {activities.map((activity) => (
+          <div
             key={activity.id}
             className="flex items-start gap-3 pb-4 border-b border-border last:border-0 last:pb-0"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
           >
             <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-0.5">
               <Clock className="w-4 h-4 text-accent" />
@@ -72,7 +68,7 @@ export function ActivityFeed() {
                 {activity.time}
               </p>
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
     </div>
