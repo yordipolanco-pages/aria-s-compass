@@ -37,20 +37,21 @@ export function AddClientModal({ isOpen, onClose, onSave }: AddClientModalProps)
         >
           {/* Backdrop */}
           <motion.div
-            className="absolute inset-0 bg-foreground/20 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50"
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
           />
 
           {/* Modal */}
           <motion.div
             className="relative bg-card rounded-2xl shadow-elegant-lg w-full max-w-md mx-4 overflow-hidden"
-            initial={{ scale: 0.95, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-border">
@@ -79,11 +80,10 @@ export function AddClientModal({ isOpen, onClose, onSave }: AddClientModalProps)
                         <button
                           key={emoji}
                           onClick={() => setLogo(emoji)}
-                          className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all ${
-                            logo === emoji
-                              ? "bg-primary/20 ring-2 ring-primary"
-                              : "bg-muted hover:bg-muted/80"
-                          }`}
+                          className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all ${logo === emoji
+                            ? "bg-primary/20 ring-2 ring-primary"
+                            : "bg-muted hover:bg-muted/80"
+                            }`}
                         >
                           {emoji}
                         </button>

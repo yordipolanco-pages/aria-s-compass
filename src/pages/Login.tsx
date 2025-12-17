@@ -6,60 +6,37 @@ export default function Login() {
   const navigate = useNavigate();
 
   const handleLogin = () => {
-    navigate("/dashboard");
+    navigate("/welcome");
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8">
       {/* Logo - Top Left */}
-      <motion.div
-        className="absolute top-8 left-8"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.6 }}
-      >
+      <div className="absolute top-8 left-8">
         <span className="text-silver font-body text-sm tracking-widest">
           numericit<span className="text-accent">+</span>
         </span>
-      </motion.div>
+      </div>
 
       {/* Main Content */}
-      <motion.div
-        className="flex flex-col items-center gap-10"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.2 }}
-      >
+      <div className="flex flex-col items-center gap-10">
         {/* The Orb */}
         <AriaOrb size="lg" />
 
         {/* Aria+ Title */}
-        <motion.h1
-          className="font-display text-4xl md:text-5xl text-navy tracking-tight"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-        >
+        <h1 className="font-display text-4xl md:text-5xl text-navy tracking-tight">
           Aria<span className="text-accent">+</span>
-        </motion.h1>
+        </h1>
 
         {/* Tagline */}
-        <motion.p
-          className="text-muted-foreground font-body text-center max-w-sm"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.7 }}
-        >
+        <p className="text-muted-foreground font-body text-center max-w-sm">
           Inteligencia estratégica para consultoría de alto nivel
-        </motion.p>
+        </p>
 
         {/* Login Button */}
         <motion.button
           onClick={handleLogin}
           className="btn-primary-pill flex items-center gap-3 mt-4"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.9 }}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
@@ -87,19 +64,14 @@ export default function Login() {
           </svg>
           <span>Ingresar con Cuenta Corporativa</span>
         </motion.button>
-      </motion.div>
+      </div>
 
       {/* Footer */}
-      <motion.div
-        className="absolute bottom-8 text-center"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 1.1 }}
-      >
+      <div className="absolute bottom-8 text-center">
         <p className="text-muted-foreground/50 text-xs font-body">
-          © 2024 Numericit. Todos los derechos reservados.
+          © 2025 Numericit. Todos los derechos reservados.
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }

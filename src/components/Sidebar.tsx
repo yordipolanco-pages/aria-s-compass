@@ -13,9 +13,18 @@ import {
   Settings,
   LogOut,
   Trash2,
+  MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AddClientModal } from "./AddClientModal";
+import { EditAreaModal } from "./EditAreaModal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface ClientArea {
   id: string;
@@ -70,8 +79,14 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [addClientOpen, setAddClientOpen] = useState(false);
+  const [editAreaOpen, setEditAreaOpen] = useState(false);
+  const [editingArea, setEditingArea] = useState<{ clientId: string; area: ClientArea } | null>(null);
+  const [isNewArea, setIsNewArea] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [hoveredClientId, setHoveredClientId] = useState<string | null>(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [hoveredAreaId, setHoveredAreaId] = useState<string | null>(null);
+  const [deleteClientConfirmId, setDeleteClientConfirmId] = useState<string | null>(null);
+  const [deleteAreaConfirmId, setDeleteAreaConfirmId] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -94,13 +109,12 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
 
   const handleDeleteClient = (clientId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (deleteConfirmId === clientId) {
+    if (deleteClientConfirmId === clientId) {
       setClients((prev) => prev.filter((c) => c.id !== clientId));
-      setDeleteConfirmId(null);
+      setDeleteClientConfirmId(null);
     } else {
-      setDeleteConfirmId(clientId);
-      // Auto-clear after 2 seconds
-      setTimeout(() => setDeleteConfirmId(null), 2000);
+      setDeleteClientConfirmId(clientId);
+      setTimeout(() => setDeleteClientConfirmId(null), 2000);
     }
   };
 
@@ -115,6 +129,78 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
     setClients((prev) => [...prev, client]);
   };
 
+  const handleAddAreaStart = (clientId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedClientId(clientId);
+    setIsNewArea(true);
+    setEditingArea(null);
+    setEditAreaOpen(true);
+  };
+
+  const handleEditAreaStart = (clientId: string, area: ClientArea, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedClientId(clientId);
+    setIsNewArea(false);
+    setEditingArea({ clientId, area });
+    setEditAreaOpen(true);
+  };
+
+  const handleDeleteArea = (clientId: string, areaId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (deleteAreaConfirmId === areaId) {
+      setClients((prev) =>
+        prev.map((c) =>
+          c.id === clientId
+            ? { ...c, areas: c.areas.filter((a) => a.id !== areaId) }
+            : c
+        )
+      );
+      setDeleteAreaConfirmId(null);
+    } else {
+      setDeleteAreaConfirmId(areaId);
+      setTimeout(() => setDeleteAreaConfirmId(null), 2000);
+    }
+  };
+
+  const handleSaveArea = (name: string, icon: string) => {
+    if (!selectedClientId) return;
+
+    // Helper to get React Node icon from string identifier
+    // In a real app, this mapping might be centralized
+    const iconMap: Record<string, any> = {
+      chart: BarChart3,
+      users: Users,
+      building: Building2,
+      briefcase: BookOpen, // Using placeholder
+      file: BookOpen, // Using placeholder
+    };
+    const IconComponent = iconMap[icon] || Building2;
+    const iconNode = <IconComponent className="w-4 h-4" />;
+
+    if (isNewArea) {
+      const newArea: ClientArea = {
+        id: `${selectedClientId}-${Date.now()}`,
+        name,
+        icon: iconNode,
+      };
+      setClients(prev => prev.map(c =>
+        c.id === selectedClientId ? { ...c, areas: [...c.areas, newArea] } : c
+      ));
+    } else if (editingArea) {
+      setClients(prev => prev.map(c =>
+        c.id === editingArea.clientId ? {
+          ...c,
+          areas: c.areas.map(a => a.id === editingArea.area.id ? { ...a, name, icon: iconNode } : a)
+        } : c
+      ));
+    }
+
+    setEditAreaOpen(false);
+    setEditingArea(null);
+    setIsNewArea(false);
+    setSelectedClientId(null);
+  };
+
   const isActiveRoute = (path: string) => location.pathname === path;
 
   const handleLogout = () => {
@@ -125,54 +211,45 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
     <>
       <aside
         className={cn(
-          "h-screen bg-sidebar flex flex-col relative overflow-hidden transition-all duration-300 ease-out",
+          "h-screen bg-sidebar flex flex-col relative overflow-hidden transition-all duration-300 ease-out group/sidebar",
           collapsed ? "w-16" : "w-64"
         )}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-sidebar-border min-h-[65px]">
-          <span className="text-sidebar-foreground font-body text-lg tracking-wider whitespace-nowrap">
-            n<span className="text-sidebar-primary">+</span>
-          </span>
-          
+          {collapsed ? (
+            <div className="w-full flex justify-center relative group/header">
+              {/* Logo (visible by default, hidden on hover) */}
+              <span className="text-sidebar-foreground font-body text-lg tracking-wider whitespace-nowrap transition-opacity duration-200 group-hover/header:opacity-0">
+                n<span className="text-sidebar-primary">+</span>
+              </span>
+
+              {/* Toggle Button (hidden by default, visible on hover) */}
+              <button
+                onClick={() => setCollapsed(false)}
+                className="absolute inset-0 flex items-center justify-center text-sidebar-foreground/70 hover:text-sidebar-foreground transition-all duration-200 opacity-0 group-hover/header:opacity-100 scale-90 group-hover/header:scale-100"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          ) : (
+            <span className="text-sidebar-foreground font-body text-lg tracking-wider whitespace-nowrap">
+              n<span className="text-sidebar-primary">+</span>
+            </span>
+          )}
+
           {!collapsed && (
             <button
               onClick={() => setCollapsed(!collapsed)}
               className="p-2 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
             >
-              <ChevronRight className={cn(
-                "w-5 h-5 transition-transform duration-200",
-                !collapsed && "rotate-180"
-              )} />
-            </button>
-          )}
-          
-          {collapsed && (
-            <button
-              onClick={() => setCollapsed(false)}
-              className="p-2 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-            >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="rotate-180 w-5 h-5" />
             </button>
           )}
         </div>
 
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto py-4">
-          {/* Dashboard Link */}
-          <div className="px-2 mb-4">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className={cn(
-                "w-full sidebar-item",
-                collapsed && "justify-center px-0",
-                isActiveRoute("/dashboard") && "sidebar-item-active"
-              )}
-            >
-              <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
-              {!collapsed && <span>Dashboard</span>}
-            </button>
-          </div>
 
           {/* Clients Section */}
           {!collapsed && (
@@ -185,13 +262,13 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
             {clients.map((client) => (
               <div key={client.id}>
                 {/* Client Row */}
-                <div 
-                  className="flex items-center group"
+                <div
+                  className="flex items-center group/client"
                   onMouseEnter={() => setHoveredClientId(client.id)}
                   onMouseLeave={() => {
                     setHoveredClientId(null);
-                    if (deleteConfirmId === client.id) {
-                      setDeleteConfirmId(null);
+                    if (deleteClientConfirmId === client.id) {
+                      setDeleteClientConfirmId(null);
                     }
                   }}
                 >
@@ -211,25 +288,37 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
                       <span className="truncate flex-1 text-left">{client.name}</span>
                     )}
                   </button>
-                  
-                  {/* Delete Button (visible on hover) */}
-                  {!collapsed && hoveredClientId === client.id && (
-                    <button
-                      onClick={(e) => handleDeleteClient(client.id, e)}
-                      className={cn(
-                        "p-1.5 rounded-md transition-colors mr-1",
-                        deleteConfirmId === client.id
-                          ? "text-red-400 bg-red-500/20"
-                          : "text-sidebar-foreground/50 hover:text-red-400 hover:bg-red-500/10"
-                      )}
-                      title={deleteConfirmId === client.id ? "Confirmar eliminación" : "Eliminar cliente"}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+
+                  {/* Client Actions (Dropdown Menu) */}
+                  {!collapsed && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <button className="p-1 rounded-md text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors mr-1 opacity-0 group-hover/client:opacity-100 data-[state=open]:opacity-100">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48 bg-[#1E1E2E] border-sidebar-border text-sidebar-foreground">
+                        <DropdownMenuItem
+                          onClick={(e) => handleAddAreaStart(client.id, e)}
+                          className="focus:bg-sidebar-accent cursor-pointer gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Agregar área</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-sidebar-border" />
+                        <DropdownMenuItem
+                          onClick={(e) => handleDeleteClient(client.id, e)}
+                          className="text-red-400 focus:bg-red-500/10 focus:text-red-400 cursor-pointer gap-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Eliminar cliente</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
-                  
+
                   {/* Expand/Collapse Button */}
-                  {!collapsed && client.areas.length > 0 && (
+                  {!collapsed && (
                     <button
                       onClick={(e) => toggleClient(client.id, e)}
                       className="p-1.5 rounded-md text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
@@ -255,17 +344,46 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
                     >
                       <div className="ml-6 mt-1 space-y-1 border-l border-sidebar-border pl-3">
                         {client.areas.map((area) => (
-                          <button
+                          <div
                             key={area.id}
-                            onClick={() => handleAreaClick(client.id, area.id)}
-                            className={cn(
-                              "w-full sidebar-item text-sm py-2",
-                              activeArea === area.id && "sidebar-item-active"
-                            )}
+                            className="flex items-center group/area"
+                            onMouseEnter={() => setHoveredAreaId(area.id)}
+                            onMouseLeave={() => setHoveredAreaId(null)}
                           >
-                            {area.icon}
-                            <span className="truncate">{area.name}</span>
-                          </button>
+                            <button
+                              onClick={() => handleAreaClick(client.id, area.id)}
+                              className={cn(
+                                "flex-1 sidebar-item text-sm py-2",
+                                activeArea === area.id && "sidebar-item-active"
+                              )}
+                            >
+                              {area.icon}
+                              <span className="truncate">{area.name}</span>
+                            </button>
+
+                            {/* Area Actions */}
+                            {hoveredAreaId === area.id && (
+                              <div className="flex items-center pr-1">
+                                <button
+                                  onClick={(e) => handleEditAreaStart(client.id, area, e)}
+                                  className="p-1 rounded text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                                >
+                                  <Settings className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={(e) => handleDeleteArea(client.id, area.id, e)}
+                                  className={cn(
+                                    "p-1 rounded transition-colors ml-1",
+                                    deleteAreaConfirmId === area.id
+                                      ? "text-red-400 bg-red-500/20"
+                                      : "text-sidebar-foreground/40 hover:text-red-400 hover:bg-red-500/10"
+                                  )}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         ))}
                       </div>
                     </motion.div>
@@ -276,7 +394,7 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
 
             {/* Add Client Button */}
             {!collapsed && (
-              <button 
+              <button
                 onClick={() => setAddClientOpen(true)}
                 className="w-full sidebar-item text-sidebar-foreground/50 hover:text-sidebar-foreground mt-2"
               >
@@ -377,6 +495,21 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
         isOpen={addClientOpen}
         onClose={() => setAddClientOpen(false)}
         onSave={handleAddClient}
+      />
+
+      {/* Edit/Create Area Modal */}
+      <EditAreaModal
+        isOpen={editAreaOpen}
+        onClose={() => {
+          setEditAreaOpen(false);
+          setEditingArea(null);
+          setIsNewArea(false);
+          setSelectedClientId(null);
+        }}
+        areaName={editingArea?.area.name || ""}
+        areaIcon={"chart"} // Default or extracted from icon
+        onSave={handleSaveArea}
+        isNew={isNewArea}
       />
     </>
   );

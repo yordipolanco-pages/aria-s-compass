@@ -53,10 +53,11 @@ export function EditClientModal({
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/50 z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             onClick={onClose}
           />
 
@@ -66,12 +67,14 @@ export function EditClientModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
           >
             <motion.div
               className="bg-background rounded-2xl shadow-elegant-lg w-full max-w-md overflow-hidden"
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -94,7 +97,7 @@ export function EditClientModal({
                   <label className="block text-sm font-medium text-foreground mb-3">
                     Logo del Cliente
                   </label>
-                  
+
                   {/* Current Logo Preview */}
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center text-3xl overflow-hidden">

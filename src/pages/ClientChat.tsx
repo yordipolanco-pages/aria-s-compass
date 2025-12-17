@@ -1,12 +1,9 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar } from "@/components/Sidebar";
 import { AriaOrb } from "@/components/AriaOrb";
 import { EditClientModal } from "@/components/EditClientModal";
-import { EditAreaModal } from "@/components/EditAreaModal";
 import {
-  Plus,
   Send,
   BarChart3,
   Users,
@@ -17,19 +14,7 @@ import {
   Target,
   Pencil,
   ChevronRight,
-  ChevronLeft,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  chart: BarChart3,
-  users: Users,
-  building: Building2,
-  briefcase: Briefcase,
-  file: FileText,
-  settings: Settings,
-  target: Target,
-};
 
 // Mock client data
 const initialClientsData: Record<string, { name: string; logo: string; areas: { id: string; name: string; icon: string }[] }> = {
@@ -57,14 +42,9 @@ const initialClientsData: Record<string, { name: string; logo: string; areas: { 
 
 export default function ClientChat() {
   const { clientId, areaId } = useParams();
-  const navigate = useNavigate();
   const [message, setMessage] = useState("");
   const [clientsData, setClientsData] = useState(initialClientsData);
   const [editClientOpen, setEditClientOpen] = useState(false);
-  const [editAreaOpen, setEditAreaOpen] = useState(false);
-  const [editingArea, setEditingArea] = useState<{ id: string; name: string; icon: string } | null>(null);
-  const [isNewArea, setIsNewArea] = useState(false);
-  const [areasSidebarCollapsed, setAreasSidebarCollapsed] = useState(false);
 
   const client = clientId ? clientsData[clientId] : null;
   const currentArea = areaId ? client?.areas.find(a => a.id === areaId) : null;
@@ -89,54 +69,10 @@ export default function ClientChat() {
     }
   };
 
-  const handleSaveArea = (name: string, icon: string) => {
-    if (clientId) {
-      if (isNewArea) {
-        const newAreaId = `${clientId}-${Date.now()}`;
-        setClientsData((prev) => ({
-          ...prev,
-          [clientId]: {
-            ...prev[clientId],
-            areas: [...prev[clientId].areas, { id: newAreaId, name, icon }],
-          },
-        }));
-      } else if (editingArea) {
-        setClientsData((prev) => ({
-          ...prev,
-          [clientId]: {
-            ...prev[clientId],
-            areas: prev[clientId].areas.map((a) =>
-              a.id === editingArea.id ? { ...a, name, icon } : a
-            ),
-          },
-        }));
-      }
-    }
-    setEditingArea(null);
-    setIsNewArea(false);
-  };
-
-  const handleAddArea = () => {
-    setIsNewArea(true);
-    setEditingArea(null);
-    setEditAreaOpen(true);
-  };
-
-  const handleEditArea = (area: { id: string; name: string; icon: string }) => {
-    setIsNewArea(false);
-    setEditingArea(area);
-    setEditAreaOpen(true);
-  };
-
-  const getAreaIcon = (iconType: string) => {
-    const IconComponent = iconMap[iconType] || Building2;
-    return <IconComponent className="w-5 h-5" />;
-  };
-
   // Determine chat context
   const chatTitle = currentArea ? `${currentArea.name} - ${client.name}` : `Chat General - ${client.name}`;
-  const chatSubtitle = currentArea 
-    ? `Chat específico del área de ${currentArea.name}` 
+  const chatSubtitle = currentArea
+    ? `Chat específico del área de ${currentArea.name}`
     : "Aquí puedes hacer consultas generales sobre este cliente.";
 
   return (
@@ -145,7 +81,7 @@ export default function ClientChat() {
 
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-background border-b border-border px-6 py-4">
+        <header className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-2xl overflow-hidden">
@@ -204,7 +140,7 @@ export default function ClientChat() {
             </div>
 
             {/* Chat Input */}
-            <div className="p-6 border-t border-border bg-background">
+            <div className="p-6">
               <div className="card-elevated p-4">
                 <div className="flex items-center gap-4">
                   <input
@@ -221,124 +157,6 @@ export default function ClientChat() {
               </div>
             </div>
           </div>
-
-          {/* Areas Sidebar */}
-          <aside 
-            className={cn(
-              "bg-background border-l border-border overflow-y-auto transition-all duration-300 ease-out relative",
-              areasSidebarCollapsed ? "w-0" : "w-80"
-            )}
-          >
-            {/* Collapse Toggle */}
-            <button
-              onClick={() => setAreasSidebarCollapsed(!areasSidebarCollapsed)}
-              className="absolute -left-3 top-6 z-10 w-6 h-6 bg-background border border-border rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            >
-              {areasSidebarCollapsed ? (
-                <ChevronLeft className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )}
-            </button>
-
-            <AnimatePresence>
-              {!areasSidebarCollapsed && (
-                <motion.div
-                  className="p-6"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="font-display text-lg text-foreground">
-                      Áreas del Cliente
-                    </h3>
-                    <button
-                      onClick={handleAddArea}
-                      className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  {/* General Chat Link */}
-                  <div className="mb-4">
-                    <button
-                      onClick={() => navigate(`/client/${clientId}`)}
-                      className={cn(
-                        "w-full card-elevated p-4 flex items-center gap-3 transition-all",
-                        !areaId && "border-2 border-primary/30 bg-primary/5"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
-                        !areaId ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-                      )}>
-                        <Building2 className="w-5 h-5" />
-                      </div>
-                      <span className={cn(
-                        "font-medium",
-                        !areaId ? "text-primary" : "text-foreground"
-                      )}>
-                        Chat General
-                      </span>
-                    </button>
-                  </div>
-
-                  {client.areas.length > 0 ? (
-                    <div className="space-y-3">
-                      {client.areas.map((area) => (
-                        <div
-                          key={area.id}
-                          className={cn(
-                            "w-full card-elevated p-4 flex items-center gap-3 transition-all group",
-                            areaId === area.id && "border-2 border-accent/30 bg-accent/5"
-                          )}
-                        >
-                          <button
-                            onClick={() => navigate(`/client/${clientId}/area/${area.id}`)}
-                            className="flex-1 flex items-center gap-3"
-                          >
-                            <div className={cn(
-                              "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
-                              areaId === area.id 
-                                ? "bg-accent/20 text-accent" 
-                                : "bg-primary/10 text-primary group-hover:bg-primary/20"
-                            )}>
-                              {getAreaIcon(area.icon)}
-                            </div>
-                            <span className={cn(
-                              "font-medium",
-                              areaId === area.id ? "text-accent" : "text-foreground"
-                            )}>
-                              {area.name}
-                            </span>
-                          </button>
-                          <button
-                            onClick={() => handleEditArea(area)}
-                            className="p-2 rounded-lg text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground hover:bg-muted transition-all"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground text-sm mb-4">
-                        No hay áreas creadas aún
-                      </p>
-                      <button onClick={handleAddArea} className="chip chip-active">
-                        <Plus className="w-4 h-4" />
-                        Crear primera área
-                      </button>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </aside>
         </div>
       </main>
 
@@ -349,20 +167,6 @@ export default function ClientChat() {
         clientName={client.name}
         clientLogo={client.logo}
         onSave={handleSaveClient}
-      />
-
-      {/* Edit/Create Area Modal */}
-      <EditAreaModal
-        isOpen={editAreaOpen}
-        onClose={() => {
-          setEditAreaOpen(false);
-          setEditingArea(null);
-          setIsNewArea(false);
-        }}
-        areaName={editingArea?.name || ""}
-        areaIcon={editingArea?.icon || "chart"}
-        onSave={handleSaveArea}
-        isNew={isNewArea}
       />
     </div>
   );
