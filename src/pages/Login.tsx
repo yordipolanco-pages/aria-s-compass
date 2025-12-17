@@ -1,13 +1,54 @@
+import { useState } from "react";
 import { AriaOrb } from "@/components/AriaOrb";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useGoogleLogin } from "@react-oauth/google";
+import { useUser } from "@/contexts/UserContext";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { setUser } = useUser();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    navigate("/welcome");
-  };
+  const handleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const userInfo = await fetch(
+          "https://www.googleapis.com/oauth2/v3/userinfo",
+          {
+            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+          }
+        ).then((res) => res.json());
+
+        const email = userInfo.email;
+        if (
+          email.endsWith("@pagesgrupo.com") ||
+          email.endsWith("@numericit.com")
+        ) {
+          setUser({
+            name: userInfo.name,
+            email: userInfo.email,
+            picture: userInfo.picture,
+          });
+          navigate("/welcome");
+        } else {
+          setError("Acceso denegado: Solo se permiten correos de pagesgrupo.com o numericit.com");
+        }
+      } catch (err) {
+        setError("Error al validar las credenciales");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: (error) => {
+      console.log("Login Failed:", error);
+      setError("Error al iniciar sesión con Google");
+    },
+  });
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8">
@@ -35,8 +76,10 @@ export default function Login() {
 
         {/* Login Button */}
         <motion.button
-          onClick={handleLogin}
-          className="btn-primary-pill flex items-center gap-3 mt-4"
+          onClick={() => handleLogin()}
+          disabled={loading}
+          className={`btn-primary-pill flex items-center gap-3 mt-4 ${loading ? "opacity-70 cursor-wait" : ""
+            }`}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
@@ -62,8 +105,19 @@ export default function Login() {
               fill="#EA4335"
             />
           </svg>
-          <span>Ingresar con Cuenta Corporativa</span>
+          <span>
+            {loading ? "Verificando..." : "Ingresar con Cuenta Corporativa"}
+          </span>
         </motion.button>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg max-w-sm">
+            <p className="text-red-400 text-sm text-center font-medium">
+              {error}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Footer */}

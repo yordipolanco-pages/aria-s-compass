@@ -143,12 +143,22 @@ export default function ClientChat() {
             <div className="p-6">
               <div className="card-elevated p-4">
                 <div className="flex items-center gap-4">
-                  <input
-                    type="text"
+                  <textarea
+                    rows={1}
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={(e) => {
+                      setMessage(e.target.value);
+                      e.target.style.height = "auto";
+                      e.target.style.height = `${e.target.scrollHeight}px`;
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        // Handle send
+                      }
+                    }}
                     placeholder={currentArea ? `Escribe tu consulta sobre ${currentArea.name}...` : "Escribe tu consulta..."}
-                    className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/50 font-body"
+                    className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/50 font-body resize-none max-h-[150px]"
                   />
                   <button className="p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
                     <Send className="w-5 h-5" />

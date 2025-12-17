@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { useUser } from "@/contexts/UserContext";
 
 interface ClientArea {
   id: string;
@@ -75,6 +76,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
+  const { user } = useUser();
   const [collapsed, setCollapsed] = useState(false);
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -249,7 +251,7 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto py-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden py-4">
 
           {/* Clients Section */}
           {!collapsed && (
@@ -468,20 +470,32 @@ export function Sidebar({ onNavigate, activeArea }: SidebarProps) {
             )}
           >
             {collapsed ? (
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sidebar-primary text-sm font-medium">
-                JD
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                {user?.picture ? (
+                  <img src={user.picture} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-sidebar-primary text-sm font-medium">
+                    {user?.name?.charAt(0) || "U"}
+                  </span>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-sidebar-primary font-medium">
-                  JD
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                  {user?.picture ? (
+                    <img src={user.picture} alt={user.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-sidebar-primary font-medium">
+                      {user?.name?.charAt(0) || "U"}
+                    </span>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0 text-left">
                   <p className="text-sidebar-foreground text-sm font-medium truncate">
-                    Juan Díaz
+                    {user?.name || "Usuario"}
                   </p>
                   <p className="text-sidebar-foreground/50 text-xs truncate">
-                    Consultor Senior
+                    {user?.email || "consultor@aria.com"}
                   </p>
                 </div>
               </div>
