@@ -81,17 +81,21 @@ export function UploadDocumentModal({
         >
           {/* Backdrop */}
           <motion.div
-            className="absolute inset-0 bg-foreground/20 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50"
             onClick={handleClose}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
           />
 
           {/* Modal */}
           <motion.div
-            className="relative bg-card rounded-2xl shadow-elevated p-8 w-full max-w-lg mx-4"
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="relative bg-card rounded-2xl shadow-elegant-lg p-8 w-full max-w-lg mx-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
           >
             {/* Close Button */}
             <button

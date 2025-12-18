@@ -54,7 +54,7 @@ export default function Login() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8">
       {/* Logo - Top Left */}
       <div className="absolute top-8 left-8">
-        <span className="text-silver font-body text-sm tracking-widest">
+        <span className="text-silver font-muli font-bold text-xl tracking-widest">
           numericit<span className="text-accent">+</span>
         </span>
       </div>
@@ -65,7 +65,7 @@ export default function Login() {
         <AriaOrb size="lg" />
 
         {/* Aria+ Title */}
-        <h1 className="font-display text-4xl md:text-5xl text-navy tracking-tight">
+        <h1 className="font-display font-bold text-4xl md:text-5xl text-navy tracking-tight">
           Aria<span className="text-accent">+</span>
         </h1>
 

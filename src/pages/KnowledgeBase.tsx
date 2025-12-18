@@ -1,138 +1,27 @@
 import { useState } from "react";
-import { 
-  BookOpen, 
-  Building2, 
-  Folder, 
-  FileText, 
-  Upload, 
-  Search, 
+import {
+  BookOpen,
+  Building2,
+  Folder,
+  FileText,
+  Upload,
+  Search,
   ChevronRight,
   Lock,
   Shield,
   Plus,
-  Download
+  Download,
+  Trash2
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { UploadDocumentModal } from "@/components/UploadDocumentModal";
+import { CreateFolderModal } from "@/components/CreateFolderModal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
-interface Document {
-  id: string;
-  name: string;
-  type: "pdf" | "xlsx" | "docx" | "pptx";
-  size: string;
-  date: string;
-  privacy: "public" | "private" | "confidential";
-}
-
-interface FolderData {
-  id: string;
-  name: string;
-  documents: Document[];
-  isExpanded: boolean;
-}
-
-interface ClientKB {
-  id: string;
-  name: string;
-  logo: string;
-  folders: FolderData[];
-  isExpanded: boolean;
-}
-
-// Mock data for firm knowledge base
-const firmFolders: FolderData[] = [
-  {
-    id: "f1",
-    name: "Frameworks de Estrategia",
-    isExpanded: false,
-    documents: [
-      { id: "d1", name: "Porter's Five Forces Template.pptx", type: "pptx", size: "2.4 MB", date: "2024-01-15", privacy: "public" },
-      { id: "d2", name: "SWOT Analysis Framework.xlsx", type: "xlsx", size: "1.1 MB", date: "2024-02-20", privacy: "public" },
-    ],
-  },
-  {
-    id: "f2",
-    name: "Plantillas Oficiales",
-    isExpanded: false,
-    documents: [
-      { id: "d3", name: "Modelo Financiero Base.xlsx", type: "xlsx", size: "4.2 MB", date: "2024-03-10", privacy: "public" },
-      { id: "d4", name: "Presentación Ejecutiva.pptx", type: "pptx", size: "8.5 MB", date: "2024-03-15", privacy: "public" },
-    ],
-  },
-  {
-    id: "f3",
-    name: "Casos de Éxito",
-    isExpanded: false,
-    documents: [
-      { id: "d5", name: "Caso Transformación Digital.pdf", type: "pdf", size: "3.8 MB", date: "2024-01-28", privacy: "private" },
-    ],
-  },
-];
-
-// Mock data for client knowledge bases
-const clientKBs: ClientKB[] = [
-  {
-    id: "1",
-    name: "Coca-Cola",
-    logo: "🥤",
-    isExpanded: false,
-    folders: [
-      {
-        id: "c1-f1",
-        name: "General",
-        isExpanded: false,
-        documents: [
-          { id: "c1-d1", name: "Contrato Master 2024.pdf", type: "pdf", size: "1.2 MB", date: "2024-01-10", privacy: "confidential" },
-        ],
-      },
-      {
-        id: "c1-f2",
-        name: "Finanzas",
-        isExpanded: false,
-        documents: [
-          { id: "c1-d2", name: "Estados Financieros Q3.xlsx", type: "xlsx", size: "2.8 MB", date: "2024-10-05", privacy: "confidential" },
-          { id: "c1-d3", name: "Proyecciones 2025.xlsx", type: "xlsx", size: "1.5 MB", date: "2024-11-20", privacy: "private" },
-        ],
-      },
-      {
-        id: "c1-f3",
-        name: "RRHH",
-        isExpanded: false,
-        documents: [
-          { id: "c1-d4", name: "Entrevistas Ejecutivos.pdf", type: "pdf", size: "890 KB", date: "2024-09-15", privacy: "confidential" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "2",
-    name: "Banco Santander",
-    logo: "🏦",
-    isExpanded: false,
-    folders: [
-      {
-        id: "c2-f1",
-        name: "General",
-        isExpanded: false,
-        documents: [
-          { id: "c2-d1", name: "Propuesta Comercial.pdf", type: "pdf", size: "2.1 MB", date: "2024-08-22", privacy: "private" },
-        ],
-      },
-      {
-        id: "c2-f2",
-        name: "Logística",
-        isExpanded: false,
-        documents: [
-          { id: "c2-d2", name: "Análisis de Procesos.docx", type: "docx", size: "1.8 MB", date: "2024-11-01", privacy: "private" },
-        ],
-      },
-    ],
-  },
-];
+import { useData, Document } from "@/contexts/DataContext";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 const getFileIcon = (type: string) => {
   const colors: Record<string, string> = {
@@ -160,37 +49,37 @@ const getPrivacyBadge = (privacy: string) => {
 };
 
 export default function KnowledgeBase() {
-  const [firmData, setFirmData] = useState(firmFolders);
-  const [clientData, setClientData] = useState(clientKBs);
+  const { clients, firmFolders, addDocumentToFirm, addDocumentToClient, addFirmFolder, deleteFirmFolder } = useData();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"firm" | "clients">("firm");
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
+  const [folderToDelete, setFolderToDelete] = useState<string | null>(null);
+
+  // Local expansion state
+  const [expandedFirmFolders, setExpandedFirmFolders] = useState<Record<string, boolean>>({});
+  const [expandedClients, setExpandedClients] = useState<Record<string, boolean>>({});
+  const [expandedClientFolders, setExpandedClientFolders] = useState<Record<string, boolean>>({});
 
   const toggleFirmFolder = (folderId: string) => {
-    setFirmData((prev) =>
-      prev.map((f) => (f.id === folderId ? { ...f, isExpanded: !f.isExpanded } : f))
-    );
+    setExpandedFirmFolders(prev => ({ ...prev, [folderId]: !prev[folderId] }));
   };
 
   const toggleClient = (clientId: string) => {
-    setClientData((prev) =>
-      prev.map((c) => (c.id === clientId ? { ...c, isExpanded: !c.isExpanded } : c))
-    );
+    setExpandedClients(prev => ({ ...prev, [clientId]: !prev[clientId] }));
   };
 
-  const toggleClientFolder = (clientId: string, folderId: string) => {
-    setClientData((prev) =>
-      prev.map((c) =>
-        c.id === clientId
-          ? {
-              ...c,
-              folders: c.folders.map((f) =>
-                f.id === folderId ? { ...f, isExpanded: !f.isExpanded } : f
-              ),
-            }
-          : c
-      )
-    );
+  const toggleClientFolder = (folderId: string) => {
+    setExpandedClientFolders(prev => ({ ...prev, [folderId]: !prev[folderId] }));
+  };
+
+  const handleCreateFolder = () => {
+    setCreateFolderOpen(true);
+  };
+
+  const handleSaveFolder = (name: string) => {
+    addFirmFolder(name);
+    toast.success("Carpeta creada exitosamente");
   };
 
   // Build knowledge bases for the upload modal
@@ -199,9 +88,9 @@ export default function KnowledgeBase() {
       id: "firm",
       name: "Metodologías Numericit",
       type: "firm" as const,
-      folders: firmData.map((f) => ({ id: f.id, name: f.name })),
+      folders: firmFolders.map((f) => ({ id: f.id, name: f.name })),
     },
-    ...clientData.map((client) => ({
+    ...clients.map((client) => ({
       id: client.id,
       name: client.name,
       logo: client.logo,
@@ -211,40 +100,22 @@ export default function KnowledgeBase() {
   ];
 
   const handleUpload = (file: File, kbId: string, folderId: string) => {
-    // Simulate upload
     const newDoc: Document = {
       id: `new-${Date.now()}`,
       name: file.name,
-      type: file.name.split(".").pop() as "pdf" | "xlsx" | "docx" | "pptx",
+      type: (file.name.split(".").pop() as "pdf" | "xlsx" | "docx" | "pptx") || "pdf",
       size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
       date: new Date().toISOString().split("T")[0],
       privacy: "private",
     };
 
     if (kbId === "firm") {
-      setFirmData((prev) =>
-        prev.map((f) =>
-          f.id === folderId
-            ? { ...f, documents: [...f.documents, newDoc], isExpanded: true }
-            : f
-        )
-      );
+      addDocumentToFirm(folderId, newDoc);
+      setExpandedFirmFolders(prev => ({ ...prev, [folderId]: true }));
     } else {
-      setClientData((prev) =>
-        prev.map((c) =>
-          c.id === kbId
-            ? {
-                ...c,
-                isExpanded: true,
-                folders: c.folders.map((f) =>
-                  f.id === folderId
-                    ? { ...f, documents: [...f.documents, newDoc], isExpanded: true }
-                    : f
-                ),
-              }
-            : c
-        )
-      );
+      addDocumentToClient(kbId, folderId, newDoc);
+      setExpandedClients(prev => ({ ...prev, [kbId]: true }));
+      setExpandedClientFolders(prev => ({ ...prev, [folderId]: true }));
     }
 
     toast.success("Documento subido exitosamente", {
@@ -253,67 +124,67 @@ export default function KnowledgeBase() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background w-full">
-      <Sidebar />
-
-      <main className="flex-1 overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
-          <div className="px-8 py-6">
-            <div className="flex items-center justify-between mb-6">
+    <>
+      <main className="flex-1 flex flex-col h-[calc(100vh-2rem)] my-4 mr-4 ml-4 rounded-3xl bg-background shadow-xl border border-sidebar-border/20 overflow-hidden">
+        <div className="p-6 border-b border-border">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                <BookOpen className="w-6 h-6" />
+              </div>
               <div>
-                <h1 className="font-display text-3xl text-foreground mb-1">Base de Conocimiento</h1>
-                <p className="text-muted-foreground">Gestiona documentos de la firma y clientes</p>
+                <h1 className="font-display text-2xl text-foreground">Base de Conocimiento</h1>
+                <p className="text-muted-foreground text-sm">Gestiona documentos y recursos</p>
               </div>
-              <Button className="gap-2" onClick={() => setUploadModalOpen(true)}>
-                <Upload className="w-4 h-4" />
-                Subir Documento
-              </Button>
             </div>
+            <Button onClick={handleCreateFolder}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nueva Carpeta
+            </Button>
+          </div>
 
-            {/* Search & Tabs */}
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar documentos..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-muted border-border"
-                />
-              </div>
-              <div className="flex bg-muted rounded-lg p-1">
-                <button
-                  onClick={() => setActiveTab("firm")}
-                  className={cn(
-                    "px-4 py-2 rounded-md text-sm font-medium transition-all",
-                    activeTab === "firm"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <BookOpen className="w-4 h-4 inline-block mr-2" />
-                  Firma
-                </button>
-                <button
-                  onClick={() => setActiveTab("clients")}
-                  className={cn(
-                    "px-4 py-2 rounded-md text-sm font-medium transition-all",
-                    activeTab === "clients"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Building2 className="w-4 h-4 inline-block mr-2" />
-                  Clientes
-                </button>
-              </div>
+          {/* Search & Tabs */}
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar documentos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-muted border-border"
+              />
+            </div>
+            <div className="flex bg-muted rounded-lg p-1">
+              <button
+                onClick={() => setActiveTab("firm")}
+                className={cn(
+                  "px-4 py-2 rounded-md text-sm font-medium transition-all",
+                  activeTab === "firm"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <BookOpen className="w-4 h-4 inline-block mr-2" />
+                Firma
+              </button>
+              <button
+                onClick={() => setActiveTab("clients")}
+                className={cn(
+                  "px-4 py-2 rounded-md text-sm font-medium transition-all",
+                  activeTab === "clients"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Building2 className="w-4 h-4 inline-block mr-2" />
+                Clientes
+              </button>
             </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-8">
+        <div className="p-8 overflow-y-auto flex-1">
           {activeTab === "firm" ? (
             /* Firm Knowledge Base */
             <div className="space-y-4">
@@ -327,33 +198,45 @@ export default function KnowledgeBase() {
                     <p className="text-sm text-muted-foreground">Biblioteca global de la firma</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="gap-2">
+                <Button variant="outline" size="sm" className="gap-2" onClick={handleCreateFolder}>
                   <Plus className="w-4 h-4" />
                   Nueva Carpeta
                 </Button>
               </div>
 
-              {firmData.map((folder) => (
+              {firmFolders.map((folder) => (
                 <div
                   key={folder.id}
                   className="bg-card rounded-xl border border-border overflow-hidden"
                 >
-                  <button
-                    onClick={() => toggleFirmFolder(folder.id)}
-                    className="w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors"
-                  >
-                    <ChevronRight
-                      className={cn(
-                        "w-4 h-4 text-muted-foreground transition-transform",
-                        folder.isExpanded && "rotate-90"
-                      )}
-                    />
-                    <Folder className="w-5 h-5 text-primary" />
-                    <span className="font-medium text-foreground flex-1 text-left">{folder.name}</span>
-                    <span className="text-sm text-muted-foreground">{folder.documents.length} archivos</span>
-                  </button>
+                  <div className="flex items-center w-full p-4 hover:bg-muted/50 transition-colors group">
+                    <button
+                      onClick={() => toggleFirmFolder(folder.id)}
+                      className="flex items-center gap-3 flex-1 text-left"
+                    >
+                      <ChevronRight
+                        className={cn(
+                          "w-4 h-4 text-muted-foreground transition-transform",
+                          expandedFirmFolders[folder.id] && "rotate-90"
+                        )}
+                      />
+                      <Folder className="w-5 h-5 text-primary" />
+                      <span className="font-medium text-foreground flex-1">{folder.name}</span>
+                      <span className="text-sm text-muted-foreground mr-4">{folder.documents.length} archivos</span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFolderToDelete(folder.id);
+                      }}
+                      className="p-2 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                      title="Eliminar carpeta"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
 
-                  {folder.isExpanded && (
+                  {expandedFirmFolders[folder.id] && (
                     <div className="border-t border-border bg-muted/30">
                       {folder.documents.map((doc) => (
                         <div
@@ -390,7 +273,7 @@ export default function KnowledgeBase() {
                 </div>
               </div>
 
-              {clientData.map((client) => (
+              {clients.map((client) => (
                 <div
                   key={client.id}
                   className="bg-card rounded-xl border border-border overflow-hidden"
@@ -403,30 +286,34 @@ export default function KnowledgeBase() {
                     <ChevronRight
                       className={cn(
                         "w-4 h-4 text-muted-foreground transition-transform",
-                        client.isExpanded && "rotate-90"
+                        expandedClients[client.id] && "rotate-90"
                       )}
                     />
-                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-lg">
-                      {client.logo}
+                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-lg overflow-hidden flex-shrink-0">
+                      {(client.logo.startsWith("data:") || client.logo.startsWith("http")) ? (
+                        <img src={client.logo} alt={client.name} className="w-full h-full object-cover" />
+                      ) : (
+                        client.logo
+                      )}
                     </div>
                     <span className="font-medium text-foreground flex-1 text-left">{client.name}</span>
                     <span className="text-sm text-muted-foreground">{client.folders.length} áreas</span>
                   </button>
 
                   {/* Client Folders (Areas) */}
-                  {client.isExpanded && (
+                  {expandedClients[client.id] && (
                     <div className="border-t border-border">
                       {client.folders.map((folder) => (
                         <div key={folder.id}>
                           <button
-                            onClick={() => toggleClientFolder(client.id, folder.id)}
+                            onClick={() => toggleClientFolder(folder.id)}
                             className="w-full flex items-center gap-3 px-4 py-3 bg-muted/30 hover:bg-muted/50 transition-colors"
                           >
                             <div className="w-4" />
                             <ChevronRight
                               className={cn(
                                 "w-4 h-4 text-muted-foreground transition-transform",
-                                folder.isExpanded && "rotate-90"
+                                expandedClientFolders[folder.id] && "rotate-90"
                               )}
                             />
                             <Folder className="w-4 h-4 text-accent" />
@@ -438,7 +325,7 @@ export default function KnowledgeBase() {
                             </span>
                           </button>
 
-                          {folder.isExpanded && (
+                          {expandedClientFolders[folder.id] && (
                             <div className="bg-muted/20">
                               {folder.documents.map((doc) => (
                                 <div
@@ -466,15 +353,35 @@ export default function KnowledgeBase() {
             </div>
           )}
         </div>
-      </main>
 
-      {/* Upload Document Modal */}
-      <UploadDocumentModal
-        isOpen={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-        knowledgeBases={knowledgeBases}
-        onUpload={handleUpload}
-      />
-    </div>
+        {/* Upload Document Modal */}
+        <UploadDocumentModal
+          isOpen={uploadModalOpen}
+          onClose={() => setUploadModalOpen(false)}
+          knowledgeBases={knowledgeBases}
+          onUpload={handleUpload}
+        />
+
+        <CreateFolderModal
+          isOpen={createFolderOpen}
+          onClose={() => setCreateFolderOpen(false)}
+          onSave={handleSaveFolder}
+        />
+        <ConfirmationModal
+          isOpen={!!folderToDelete}
+          onClose={() => setFolderToDelete(null)}
+          onConfirm={() => {
+            if (folderToDelete) {
+              deleteFirmFolder(folderToDelete);
+              toast.success("Carpeta eliminada exitosamente");
+            }
+          }}
+          title="Eliminar Carpeta"
+          description="¿Estás seguro que deseas eliminar esta carpeta? Esta acción no se puede deshacer y eliminará todos los documentos contenidos."
+          confirmText="Eliminar"
+          variant="destructive"
+        />
+      </main>
+    </>
   );
 }

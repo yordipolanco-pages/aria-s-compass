@@ -14,8 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['"Playfair Display"', 'serif'],
-        body: ['Inter', 'sans-serif'],
+        display: ['"Mulish"', 'sans-serif'],
+        body: ['"Mulish"', 'sans-serif'],
+        sans: ['"Mulish"', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",

@@ -4,7 +4,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { AriaOrb } from "@/components/AriaOrb";
 import { EditClientModal } from "@/components/EditClientModal";
 import {
-  Send,
+  ArrowUp,
   BarChart3,
   Users,
   Building2,
@@ -14,40 +14,19 @@ import {
   Target,
   Pencil,
   ChevronRight,
+  Paperclip,
 } from "lucide-react";
-
-// Mock client data
-const initialClientsData: Record<string, { name: string; logo: string; areas: { id: string; name: string; icon: string }[] }> = {
-  "1": {
-    name: "Coca-Cola",
-    logo: "🥤",
-    areas: [
-      { id: "1-1", name: "Finanzas", icon: "chart" },
-      { id: "1-2", name: "RRHH", icon: "users" },
-    ],
-  },
-  "2": {
-    name: "Banco Santander",
-    logo: "🏦",
-    areas: [
-      { id: "2-1", name: "Logística", icon: "building" },
-    ],
-  },
-  "3": {
-    name: "Grupo Bimbo",
-    logo: "🍞",
-    areas: [],
-  },
-};
+import { useData } from "@/contexts/DataContext";
 
 export default function ClientChat() {
   const { clientId, areaId } = useParams();
   const [message, setMessage] = useState("");
-  const [clientsData, setClientsData] = useState(initialClientsData);
+  const { clients, addClient, updateClient } = useData();
   const [editClientOpen, setEditClientOpen] = useState(false);
 
-  const client = clientId ? clientsData[clientId] : null;
-  const currentArea = areaId ? client?.areas.find(a => a.id === areaId) : null;
+  // Find client and area from DataContext
+  const client = clientId ? clients.find(c => c.id === clientId) : null;
+  const currentArea = areaId && client ? client.areas.find(a => a.id === areaId) : null;
 
   if (!client) {
     return (
@@ -61,11 +40,8 @@ export default function ClientChat() {
   }
 
   const handleSaveClient = (name: string, logo: string) => {
-    if (clientId) {
-      setClientsData((prev) => ({
-        ...prev,
-        [clientId]: { ...prev[clientId], name, logo },
-      }));
+    if (client) {
+      updateClient(client.id, { name, logo });
     }
   };
 
@@ -76,10 +52,8 @@ export default function ClientChat() {
     : "Aquí puedes hacer consultas generales sobre este cliente.";
 
   return (
-    <div className="flex min-h-screen w-full bg-pearl">
-      <Sidebar activeArea={areaId} />
-
-      <main className="flex-1 flex flex-col overflow-hidden">
+    <>
+      <main className="flex-1 flex flex-col overflow-hidden h-[calc(100vh-2rem)] my-4 mr-4 ml-4 rounded-3xl bg-background shadow-xl border border-sidebar-border/20">
         {/* Header */}
         <header className="px-6 py-4">
           <div className="flex items-center justify-between">
@@ -141,8 +115,24 @@ export default function ClientChat() {
 
             {/* Chat Input */}
             <div className="p-6">
-              <div className="card-elevated p-4">
+              <div className="bg-secondary rounded-2xl p-4 transition-colors hover:bg-secondary/80">
                 <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => document.getElementById("chat-file-upload")?.click()}
+                    className="p-2.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
+                  >
+                    <Paperclip className="w-5 h-5" />
+                  </button>
+                  <input
+                    type="file"
+                    id="chat-file-upload"
+                    className="hidden"
+                    onChange={(e) => {
+                      // Placeholder for actual upload logic
+                      const file = e.target.files?.[0];
+                      if (file) console.log("File attached:", file.name);
+                    }}
+                  />
                   <textarea
                     rows={1}
                     value={message}
@@ -158,10 +148,10 @@ export default function ClientChat() {
                       }
                     }}
                     placeholder={currentArea ? `Escribe tu consulta sobre ${currentArea.name}...` : "Escribe tu consulta..."}
-                    className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/50 font-body resize-none max-h-[150px]"
+                    className="flex-1 bg-transparent border-none outline-none text-secondary-foreground placeholder:text-muted-foreground font-body resize-none max-h-[150px]"
                   />
                   <button className="p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
-                    <Send className="w-5 h-5" />
+                    <ArrowUp className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -178,6 +168,6 @@ export default function ClientChat() {
         clientLogo={client.logo}
         onSave={handleSaveClient}
       />
-    </div>
+    </>
   );
 }

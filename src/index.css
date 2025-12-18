@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Mulish:wght@400;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -100,13 +101,19 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Mulish', sans-serif;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Mulish', sans-serif;
   }
 }
+
 
 @layer components {
   .card-elevated {
@@ -165,37 +172,40 @@
 
 @layer utilities {
   .text-display {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Mulish', sans-serif;
   }
 
   .text-body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Mulish', sans-serif;
+  }
+
+  .font-muli {
+    font-family: 'Mulish', sans-serif;
   }
 
   .gradient-orb {
-    background: linear-gradient(
-      135deg,
-      hsl(var(--orb-navy)) 0%,
-      hsl(var(--orb-blue)) 40%,
-      hsl(var(--orb-cyan)) 70%,
-      hsl(var(--orb-silver)) 100%
-    );
+    background: linear-gradient(135deg,
+        hsl(var(--orb-navy)) 0%,
+        hsl(var(--orb-blue)) 40%,
+        hsl(var(--orb-cyan)) 70%,
+        hsl(var(--orb-silver)) 100%);
   }
 
   .gradient-subtle-blue {
-    background: linear-gradient(
-      180deg,
-      hsl(var(--snow)) 0%,
-      hsl(var(--pearl)) 100%
-    );
+    background: linear-gradient(180deg,
+        hsl(var(--snow)) 0%,
+        hsl(var(--pearl)) 100%);
   }
 }
 
 /* Orb Animation */
 @keyframes orb-float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0) scale(1);
   }
+
   50% {
     transform: translateY(-8px) scale(1.02);
   }
@@ -205,15 +215,19 @@
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
 }
 
 @keyframes orb-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.8;
   }
+
   50% {
     opacity: 1;
   }

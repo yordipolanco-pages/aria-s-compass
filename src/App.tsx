@@ -9,25 +9,33 @@ import ClientChat from "./pages/ClientChat";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import NotFound from "./pages/NotFound";
 
+import { DataProvider } from "@/contexts/DataContext";
+
+import { Layout } from "@/components/Layout";
+
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/welcome" element={<Welcome />} />
-          <Route path="/client/:clientId" element={<ClientChat />} />
-          <Route path="/client/:clientId/area/:areaId" element={<ClientChat />} />
-          <Route path="/knowledge" element={<KnowledgeBase />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <DataProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Login />} />
+            <Route element={<Layout />}>
+              <Route path="/welcome" element={<Welcome />} />
+              <Route path="/client/:clientId" element={<ClientChat />} />
+              <Route path="/client/:clientId/area/:areaId" element={<ClientChat />} />
+              <Route path="/knowledge" element={<KnowledgeBase />} />
+            </Route>
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </DataProvider>
   </QueryClientProvider>
 );
 
