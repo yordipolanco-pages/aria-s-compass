@@ -8,7 +8,7 @@ import Welcome from "./pages/Welcome";
 import ClientChat from "./pages/ClientChat";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import NotFound from "./pages/NotFound";
-
+import Whiteboard from "./pages/Whiteboard";
 import { DataProvider } from "@/contexts/DataContext";
 
 import { Layout } from "@/components/Layout";
@@ -29,9 +29,8 @@ const App = () => (
               <Route path="/client/:clientId" element={<ClientChat />} />
               <Route path="/client/:clientId/area/:areaId" element={<ClientChat />} />
               <Route path="/knowledge" element={<KnowledgeBase />} />
+              <Route path="/whiteboard" element={<Whiteboard />} />
             </Route>
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

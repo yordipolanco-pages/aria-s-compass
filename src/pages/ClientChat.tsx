@@ -74,26 +74,32 @@ export default function ClientChat() {
   useEffect(() => {
     const chatIdParam = searchParams.get("chatId");
 
+    // 1. If URL has specific chatId, try to load it
     if (chatIdParam) {
       const chatExists = chatSessions.find(c => c.id === chatIdParam);
       if (chatExists) {
-        setActiveChatId(chatIdParam);
+        if (activeChatId !== chatIdParam) {
+          setActiveChatId(chatIdParam);
+        }
         return;
       }
     }
 
-    // Check if current active chat is valid for this area/client context
+    // 2. Main Logic: Ensure activeChatId fits current context (Client + Area)
     const isActiveChatValid = activeChatId && clientChats.find(c => c.id === activeChatId);
 
     if (!isActiveChatValid) {
-      // If invalid (e.g. changed area), reset or pick first available
+      // If the currently selected chat doesn't belong to this new area/client view,
+      // reset it.
       if (clientChats.length > 0) {
+        // Option A: Auto-select latest chat
         setActiveChatId(clientChats[0].id);
       } else {
+        // Option B: No chats? Set to null (New Chat)
         setActiveChatId(null);
       }
     }
-  }, [clientId, areaId, chatSessions.length, searchParams, clientChats]);
+  }, [clientId, areaId, chatSessions, searchParams, activeChatId]); // Removed clientChats from dependency to avoid loop, calculated inside or separate memo
 
   const handleNewChat = () => {
     setActiveChatId(null);

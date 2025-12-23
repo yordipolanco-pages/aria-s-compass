@@ -14,7 +14,8 @@ import {
   Trash2,
   MoreHorizontal,
   MessageSquare,
-  Clock
+  Clock,
+  Presentation
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AddClientModal } from "./AddClientModal";
@@ -27,6 +28,11 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useUser } from "@/contexts/UserContext";
 import { useData, ClientArea, Client } from "@/contexts/DataContext";
 
@@ -214,26 +220,36 @@ export function Sidebar() {
                       }
                     }}
                   >
-                    <button
-                      onClick={() => handleClientClick(client)}
-                      className={cn(
-                        "flex-1 sidebar-item",
-                        collapsed && "justify-center px-0",
-                        isActiveRoute(`/client/${client.id}`) && "sidebar-item-active"
+                    <Tooltip delayDuration={500}>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => handleClientClick(client)}
+                          className={cn(
+                            "flex-1 sidebar-item",
+                            collapsed && "justify-center px-0",
+                            isActiveRoute(`/client/${client.id}`) && "sidebar-item-active"
+                          )}
+                        >
+                          {/* Client Logo */}
+                          <div className="w-7 h-7 rounded-lg bg-sidebar-accent flex items-center justify-center text-sm flex-shrink-0 overflow-hidden">
+                            {(client.logo.startsWith("data:") || client.logo.startsWith("http")) ? (
+                              <img src={client.logo} alt={client.name} className="w-full h-full object-cover" />
+                            ) : (
+                              client.logo
+                            )}
+                          </div>
+                          {!collapsed && (
+                            <span className="truncate flex-1 text-left">{client.name}</span>
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      {collapsed && <TooltipContent side="right">{client.name}</TooltipContent>}
+                      {!collapsed && client.name.length > 20 && (
+                        <TooltipContent side="right" className="bg-sidebar-accent text-sidebar-foreground border-sidebar-border shadow-xl">
+                          {client.name}
+                        </TooltipContent>
                       )}
-                    >
-                      {/* Client Logo */}
-                      <div className="w-7 h-7 rounded-lg bg-sidebar-accent flex items-center justify-center text-sm flex-shrink-0 overflow-hidden">
-                        {(client.logo.startsWith("data:") || client.logo.startsWith("http")) ? (
-                          <img src={client.logo} alt={client.name} className="w-full h-full object-cover" />
-                        ) : (
-                          client.logo
-                        )}
-                      </div>
-                      {!collapsed && (
-                        <span className="truncate flex-1 text-left">{client.name}</span>
-                      )}
-                    </button>
+                    </Tooltip>
 
                     {/* Client Actions (Dropdown Menu) */}
                     {!collapsed && (
@@ -306,16 +322,25 @@ export function Sidebar() {
                                 onMouseEnter={() => setHoveredAreaId(area.id)}
                                 onMouseLeave={() => setHoveredAreaId(null)}
                               >
-                                <button
-                                  onClick={() => handleAreaClick(client.id, area.id)}
-                                  className={cn(
-                                    "flex-1 sidebar-item text-sm py-2",
-                                    activeArea === area.id && "sidebar-item-active"
+                                <Tooltip delayDuration={500}>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      onClick={() => handleAreaClick(client.id, area.id)}
+                                      className={cn(
+                                        "flex-1 sidebar-item text-sm py-2",
+                                        activeArea === area.id && "sidebar-item-active"
+                                      )}
+                                    >
+                                      <IconComponent className="w-4 h-4 flex-shrink-0" />
+                                      <span className="truncate">{area.name}</span>
+                                    </button>
+                                  </TooltipTrigger>
+                                  {area.name.length > 20 && (
+                                    <TooltipContent side="right" className="bg-sidebar-accent text-sidebar-foreground border-sidebar-border">
+                                      {area.name}
+                                    </TooltipContent>
                                   )}
-                                >
-                                  <IconComponent className="w-4 h-4" />
-                                  <span className="truncate">{area.name}</span>
-                                </button>
+                                </Tooltip>
 
                                 {/* Area Actions */}
                                 {hoveredAreaId === area.id && (
@@ -362,13 +387,28 @@ export function Sidebar() {
             )}
           </div>
 
-          {/* Knowledge Base */}
+          {/* Resources & Tools Section */}
           <div className="px-2 mt-6">
             {!collapsed && (
               <p className="px-2 text-xs font-medium text-sidebar-foreground/50 uppercase tracking-wider mb-3">
-                Recursos
+                Herramientas
               </p>
             )}
+
+            {/* Whiteboard Button - Moved ABOVE Knowledge Base */}
+            <button
+              onClick={() => navigate("/whiteboard")}
+              className={cn(
+                "w-full sidebar-item mb-1",
+                collapsed && "justify-center px-0",
+                isActiveRoute("/whiteboard") && "sidebar-item-active"
+              )}
+            >
+              <Presentation className="w-5 h-5 flex-shrink-0" />
+              {!collapsed && <span className="truncate">Pizarra Estratégica</span>}
+            </button>
+
+            {/* Knowledge Base Button */}
             <button
               onClick={() => navigate("/knowledge")}
               className={cn(
@@ -378,7 +418,7 @@ export function Sidebar() {
               )}
             >
               <BookOpen className="w-5 h-5 flex-shrink-0" />
-              {!collapsed && <span>Base de Conocimiento</span>}
+              {!collapsed && <span className="truncate">Base de Conocimiento</span>}
             </button>
           </div>
         </div>
@@ -414,7 +454,8 @@ export function Sidebar() {
               <MessageSquare className="w-3 h-3" />
               Todos los Chats
             </h3>
-            <div className="space-y-0.5 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+            {/* Added [&::-webkit-scrollbar]:hidden to hide scrollbar while allowing scroll */}
+            <div className="space-y-0.5 max-h-[200px] overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden">
               {allChats.map(chat => {
                 const chatClient = clients.find(c => c.id === chat.clientId);
                 if (!chatClient) return null;
