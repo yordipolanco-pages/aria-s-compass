@@ -1,12 +1,14 @@
 import { motion } from "framer-motion";
 
 interface AriaOrbProps {
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   className?: string;
+  isStatic?: boolean;
 }
 
-export function AriaOrb({ size = "lg", className = "" }: AriaOrbProps) {
+export function AriaOrb({ size = "lg", className = "", isStatic = false }: AriaOrbProps) {
   const sizeClasses = {
+    xs: "w-8 h-8",
     sm: "w-12 h-12",
     md: "w-24 h-24",
     lg: "w-48 h-48",
@@ -21,7 +23,7 @@ export function AriaOrb({ size = "lg", className = "" }: AriaOrbProps) {
           background:
             "radial-gradient(circle, hsl(217 91% 60% / 0.4) 0%, transparent 70%)",
         }}
-        animate={{
+        animate={isStatic ? undefined : {
           scale: [1, 1.2, 1],
           opacity: [0.3, 0.5, 0.3],
         }}
@@ -35,7 +37,7 @@ export function AriaOrb({ size = "lg", className = "" }: AriaOrbProps) {
       {/* Main orb container */}
       <motion.div
         className="relative w-full h-full rounded-full overflow-hidden"
-        animate={{
+        animate={isStatic ? undefined : {
           y: [0, -8, 0],
         }}
         transition={{
@@ -58,7 +60,7 @@ export function AriaOrb({ size = "lg", className = "" }: AriaOrbProps) {
               radial-gradient(ellipse at 50% 50%, hsl(217 91% 55%) 0%, hsl(222 47% 15%) 100%)
             `,
           }}
-          animate={{
+          animate={isStatic ? undefined : {
             rotate: [0, 360],
           }}
           transition={{
@@ -75,8 +77,10 @@ export function AriaOrb({ size = "lg", className = "" }: AriaOrbProps) {
             background:
               "radial-gradient(ellipse at center, hsl(190 80% 70% / 0.6) 0%, transparent 70%)",
             filter: "blur(20px)",
+            top: "12.5%",
+            left: "12.5%",
           }}
-          animate={{
+          animate={isStatic ? undefined : {
             x: ["0%", "30%", "0%", "-30%", "0%"],
             y: ["0%", "-20%", "30%", "-10%", "0%"],
             scale: [1, 1.1, 0.9, 1.05, 1],
@@ -98,7 +102,7 @@ export function AriaOrb({ size = "lg", className = "" }: AriaOrbProps) {
             top: "20%",
             left: "10%",
           }}
-          animate={{
+          animate={isStatic ? undefined : {
             x: ["0%", "-20%", "20%", "0%"],
             y: ["0%", "25%", "-15%", "0%"],
             opacity: [0.5, 0.8, 0.4, 0.5],
@@ -120,7 +124,7 @@ export function AriaOrb({ size = "lg", className = "" }: AriaOrbProps) {
             left: "20%",
             filter: "blur(8px)",
           }}
-          animate={{
+          animate={isStatic ? undefined : {
             opacity: [0.4, 0.7, 0.4],
           }}
           transition={{

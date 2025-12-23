@@ -14,6 +14,24 @@ export interface FolderData {
     name: string;
     documents: Document[];
 }
+// ... (interfaces)
+
+export interface Message {
+    id: string;
+    role: "user" | "assistant";
+    content: string;
+    timestamp: number;
+}
+
+export interface ChatSession {
+    id: string;
+    clientId: string;
+    areaId?: string;
+    title: string;
+    createdAt: number;
+    lastMessageAt: number;
+    messages: Message[];
+}
 
 export interface ClientArea {
     id: string;
@@ -49,6 +67,12 @@ interface DataContextType {
     addDocumentToClient: (clientId: string, folderId: string, doc: Document) => void;
     addFirmFolder: (name: string) => void;
     deleteFirmFolder: (id: string) => void;
+    chatSessions: ChatSession[];
+    createChatSession: (clientId: string, areaId?: string) => string;
+    addMessageToChat: (chatId: string, message: Omit<Message, "id" | "timestamp">) => void;
+    deleteChatSession: (chatId: string) => void;
+    clearClientChatHistory: (clientId: string) => void;
+    updateChatTitle: (chatId: string, title: string) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -58,6 +82,7 @@ const STORAGE_KEY = "aria_compass_data";
 export function DataProvider({ children }: { children: ReactNode }) {
     const [clients, setClients] = useState<Client[]>([]);
     const [firmFolders, setFirmFolders] = useState<FolderData[]>([]);
+    const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
 
     // Load from Storage
     useEffect(() => {
@@ -67,6 +92,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 const parsed = JSON.parse(stored);
                 if (parsed.clients) setClients(parsed.clients);
                 if (parsed.firmFolders) setFirmFolders(parsed.firmFolders);
+                if (parsed.chatSessions) setChatSessions(parsed.chatSessions);
             } catch (e) {
                 console.error("Failed to parse stored data", e);
             }
@@ -75,9 +101,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     // Save to Storage
     useEffect(() => {
-        const data = { clients, firmFolders };
+        const data = { clients, firmFolders, chatSessions };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }, [clients, firmFolders]);
+    }, [clients, firmFolders, chatSessions]);
 
     const addClient = (name: string, logo: string) => {
         const newClient: Client = {
@@ -156,6 +182,58 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setFirmFolders(prev => prev.filter(f => f.id !== id));
     };
 
+    const createChatSession = (clientId: string, areaId?: string) => {
+        const newChat: ChatSession = {
+            id: Date.now().toString(),
+            clientId,
+            areaId,
+            title: "Nuevo Chat",
+            createdAt: Date.now(),
+            lastMessageAt: Date.now(),
+            messages: []
+        };
+        setChatSessions(prev => [newChat, ...prev]);
+        return newChat.id;
+    };
+
+    const addMessageToChat = (chatId: string, message: Omit<Message, "id" | "timestamp">) => {
+        setChatSessions(prev => prev.map(chat => {
+            if (chat.id === chatId) {
+                const newMessage: Message = {
+                    id: Date.now().toString(),
+                    timestamp: Date.now(),
+                    ...message
+                };
+
+                // Auto-generate title if it's the first user message
+                let title = chat.title;
+                if (chat.messages.length === 0 && message.role === "user") {
+                    title = message.content.slice(0, 30) + (message.content.length > 30 ? "..." : "");
+                }
+
+                return {
+                    ...chat,
+                    lastMessageAt: Date.now(),
+                    title,
+                    messages: [...chat.messages, newMessage]
+                };
+            }
+            return chat;
+        }));
+    };
+
+    const deleteChatSession = (chatId: string) => {
+        setChatSessions(prev => prev.filter(c => c.id !== chatId));
+    };
+
+    const clearClientChatHistory = (clientId: string) => {
+        setChatSessions(prev => prev.filter(c => c.clientId !== clientId));
+    };
+
+    const updateChatTitle = (chatId: string, title: string) => {
+        setChatSessions(prev => prev.map(c => c.id === chatId ? { ...c, title } : c));
+    };
+
     return (
         <DataContext.Provider value={{
             clients,
@@ -168,7 +246,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
             addDocumentToFirm,
             addDocumentToClient,
             addFirmFolder,
-            deleteFirmFolder
+            deleteFirmFolder,
+            chatSessions,
+            createChatSession,
+            addMessageToChat,
+            deleteChatSession,
+            clearClientChatHistory,
+            updateChatTitle
         }}>
             {children}
         </DataContext.Provider>

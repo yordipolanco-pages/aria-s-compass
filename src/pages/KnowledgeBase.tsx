@@ -99,29 +99,64 @@ export default function KnowledgeBase() {
     })),
   ];
 
-  const handleUpload = (file: File, kbId: string, folderId: string) => {
-    const newDoc: Document = {
-      id: `new-${Date.now()}`,
-      name: file.name,
-      type: (file.name.split(".").pop() as "pdf" | "xlsx" | "docx" | "pptx") || "pdf",
-      size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-      date: new Date().toISOString().split("T")[0],
-      privacy: "private",
-    };
+  const handleUpload = async (file: File, kbId: string, folderId: string) => {
+    // 1. Crear FormData para enviar el archivo
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("clientId", kbId); // kbId es el ID del cliente o "firm"
+    formData.append("areaId", folderId);
 
-    if (kbId === "firm") {
-      addDocumentToFirm(folderId, newDoc);
-      setExpandedFirmFolders(prev => ({ ...prev, [folderId]: true }));
-    } else {
-      addDocumentToClient(kbId, folderId, newDoc);
-      setExpandedClients(prev => ({ ...prev, [kbId]: true }));
-      setExpandedClientFolders(prev => ({ ...prev, [folderId]: true }));
+    // Notificación de inicio
+    const toastId = toast.loading(`Subiendo ${file.name}...`);
+
+    try {
+      // 2. Llamada al Backend Python
+      const response = await fetch("http://localhost:8000/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Error en el servidor");
+
+      const data = await response.json();
+      console.log("Upload exitoso:", data);
+
+      // 3. Si tuvo éxito, actualizamos la UI (Tu código original)
+      const newDoc: Document = {
+        id: `new-${Date.now()}`,
+        name: file.name,
+        type: (file.name.split(".").pop() as "pdf" | "xlsx" | "docx" | "pptx") || "pdf",
+        size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
+        date: new Date().toISOString().split("T")[0],
+        privacy: "private",
+      };
+
+      if (kbId === "firm") {
+        addDocumentToFirm(folderId, newDoc);
+        setExpandedFirmFolders(prev => ({ ...prev, [folderId]: true }));
+      } else {
+        addDocumentToClient(kbId, folderId, newDoc);
+        setExpandedClients(prev => ({ ...prev, [kbId]: true }));
+        setExpandedClientFolders(prev => ({ ...prev, [folderId]: true }));
+      }
+
+toast.success("Archivo enviado al núcleo", {
+        id: toastId,
+        duration: 5000, // Que dure un poco más
+        description: "Aria+ está leyendo y analizando el documento. Estará disponible en el chat en aproximadamente 1 o 2 minutos.",
+        icon: <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+      });
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al subir documento", {
+        id: toastId,
+        description: "Verifica que el servidor (server.py) esté corriendo.",
+      });
     }
-
-    toast.success("Documento subido exitosamente", {
-      description: `${file.name} se agregó a la base de conocimiento.`,
-    });
   };
+
+
 
   return (
     <>
@@ -137,9 +172,9 @@ export default function KnowledgeBase() {
                 <p className="text-muted-foreground text-sm">Gestiona documentos y recursos</p>
               </div>
             </div>
-            <Button onClick={handleCreateFolder}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nueva Carpeta
+            <Button onClick={() => setUploadModalOpen(true)}>
+              <Upload className="w-4 h-4 mr-2" />
+              Subir Documento
             </Button>
           </div>
 

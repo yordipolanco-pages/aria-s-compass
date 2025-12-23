@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {
   ChevronDown,
-
   ChevronRight,
   Plus,
   BookOpen,
@@ -14,6 +13,8 @@ import {
   LogOut,
   Trash2,
   MoreHorizontal,
+  MessageSquare,
+  Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AddClientModal } from "./AddClientModal";
@@ -31,7 +32,7 @@ import { useData, ClientArea, Client } from "@/contexts/DataContext";
 
 export function Sidebar() {
   const { user, setUser } = useUser();
-  const { clients, addClient, deleteClient, addArea, deleteArea } = useData();
+  const { clients, addClient, deleteClient, addArea, deleteArea, chatSessions } = useData();
   const { areaId: activeArea } = useParams();
 
   const [collapsed, setCollapsed] = useState(false);
@@ -46,6 +47,12 @@ export function Sidebar() {
   const [editingArea, setEditingArea] = useState<{ clientId: string; area: ClientArea } | null>(null);
   const [isNewArea, setIsNewArea] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+
+  const recentChats = chatSessions
+    .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime())
+    .slice(0, 5);
+
+  const allChats = chatSessions.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
   const [hoveredClientId, setHoveredClientId] = useState<string | null>(null);
   const [hoveredAreaId, setHoveredAreaId] = useState<string | null>(null);
   const [deleteClientConfirmId, setDeleteClientConfirmId] = useState<string | null>(null);
@@ -376,6 +383,60 @@ export function Sidebar() {
           </div>
         </div>
 
+        {/* Global Recent History Section */}
+        {!collapsed && recentChats.length > 0 && (
+          <div className="mt-2 px-4 mb-4 pt-4 border-t border-sidebar-border">
+            <h3 className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2 pl-2 flex items-center gap-2">
+              <Clock className="w-3 h-3" />
+              Recientes
+            </h3>
+            <div className="space-y-0.5 mb-6">
+              {recentChats.map(chat => {
+                const chatClient = clients.find(c => c.id === chat.clientId);
+                if (!chatClient) return null;
+                return (
+                  <button
+                    key={chat.id}
+                    onClick={() => navigate(`/client/${chat.clientId}?chatId=${chat.id}`)}
+                    className="w-full text-left px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all flex items-center gap-2 group"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 text-accent/70 group-hover:text-accent" />
+                    <div className="flex-1 overflow-hidden">
+                      <p className="truncate font-medium">{chat.title}</p>
+                      <p className="text-[10px] text-sidebar-foreground/50 truncate">{chatClient.name} • {new Date(chat.lastMessageAt).toLocaleDateString()}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <h3 className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2 pl-2 flex items-center gap-2">
+              <MessageSquare className="w-3 h-3" />
+              Todos los Chats
+            </h3>
+            <div className="space-y-0.5 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+              {allChats.map(chat => {
+                const chatClient = clients.find(c => c.id === chat.clientId);
+                if (!chatClient) return null;
+                return (
+                  <button
+                    key={`all-${chat.id}`}
+                    onClick={() => navigate(`/client/${chat.clientId}?chatId=${chat.id}`)}
+                    className="w-full text-left px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all flex items-center gap-2 group"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-sidebar-border group-hover:bg-accent flex-shrink-0" />
+                    <div className="flex-1 overflow-hidden">
+                      <p className="truncate font-medium">{chat.title}</p>
+                      <p className="text-[10px] text-sidebar-foreground/50 truncate">{chatClient.name}</p>
+                    </div>
+                  </button>
+                );
+              })}
+              {allChats.length === 0 && <p className="text-xs text-sidebar-foreground/40 px-3 py-2">No hay chats aún.</p>}
+            </div>
+          </div>
+        )}
+
         {/* Consultant Card with Menu */}
         <div className="p-3 border-t border-sidebar-border relative">
           <DropdownMenu>
@@ -461,7 +522,7 @@ export function Sidebar() {
           setSelectedClientId(null);
         }}
         areaName={editingArea?.area.name || ""}
-        areaIcon={"chart"} // Default or extracted from icon
+        areaIcon="chart"
         onSave={handleSaveArea}
         isNew={isNewArea}
       />
