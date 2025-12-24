@@ -43,92 +43,52 @@ export default function Whiteboard() {
     const userPrompt = chatInput;
     setChatInput("");
 
+    // --- PROMPT ENGINEERING SYSTEM ---
+    // This instructs the AI to return the EXACT JSON format our renderer needs.
+    const systemInstruction = `
+    Eres un asistente experto en diagramación visual. Tu trabajo es interpretar la solicitud del usuario y generar un diagrama estructurado en formato JSON.
+    
+    NO respondas con texto conversacional. SOLO responde con un objeto JSON válido.
+    
+    El formato JSON debe ser exactamente así:
+    {
+      "nodes": [
+        { "id": "1", "label": "Inicio", "type": "diamond", "x": 100, "y": 100 },
+        { "id": "2", "label": "Paso 1", "type": "rectangle", "x": 300, "y": 100 }
+    `; // Corrected: Removed `setIsGenerating(true);` from inside the string literal.
+
     try {
-      const response = await fetch("http://localhost:8000/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: `Genera un diagrama para: ${userPrompt}`,
+      const userRequest = {
+        message: userPrompt,
+        context: {
           clientId: selectedClientId,
-          areaId: selectedAreaId || "general"
-        }),
-      });
+          areaId: selectedAreaId,
+        },
+      };
 
-      const data = await response.json();
-
-      if (data.is_diagram) {
-        try {
-          const diagramData = JSON.parse(data.response);
-          drawDiagramOnCanvas(diagramData);
-          toast.success("Diagrama generado exitosamente");
-          if (showAssistant) setShowAssistant(false); // Close after successful gen
-        } catch (e) {
-          console.error("Error parseando JSON de IA:", e);
-          toast.error("La IA respondió, pero no pude dibujar el diagrama. Revisa la consola.");
-        }
-      } else {
-        toast.info("Respuesta de texto recibida: " + data.response.substring(0, 50) + "...");
+      if (!editor) {
+        toast.error("Editor no inicializado.");
+        return;
       }
 
-    } catch (error) {
-      console.error(error);
-      toast.error("Error conectando con Aria+");
+      // Lazy load agent
+      const { TldrawAgent } = await import("../lib/tldraw-agent/Agent");
+      const agent = new TldrawAgent(editor);
+
+      await agent.prompt(userRequest);
+      toast.success("Diagrama generado exitosamente");
+      if (showAssistant) setShowAssistant(false);
+
+    } catch (error: any) {
+      console.error("Error conectando con Agente:", error);
+      toast.error("Error al generar diagrama", {
+        description: error.message || "Verifica la conexión con el backend."
+      });
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // --- LOGICA DE DIBUJO ---
-  const drawDiagramOnCanvas = (data: any) => {
-    if (!editor) return;
-
-    const newShapes: any[] = [];
-    const nodeMap = new Map();
-
-    if (data.nodes && Array.isArray(data.nodes)) {
-      data.nodes.forEach((node: any) => {
-        const shapeId = createShapeId();
-        nodeMap.set(node.id, shapeId);
-
-        newShapes.push({
-          id: shapeId,
-          type: "geo",
-          x: node.x || Math.random() * 500,
-          y: node.y || Math.random() * 500,
-          props: {
-            geo: node.type === "diamond" ? "diamond" : node.type === "ellipse" ? "ellipse" : "rectangle",
-            text: node.label,
-            w: 160,
-            h: 80,
-            color: "light-blue",
-          },
-        });
-      });
-    }
-
-    if (data.edges && Array.isArray(data.edges)) {
-      data.edges.forEach((edge: any) => {
-        const fromId = nodeMap.get(edge.from);
-        const toId = nodeMap.get(edge.to);
-
-        if (fromId && toId) {
-          newShapes.push({
-            id: createShapeId(),
-            type: "arrow",
-            fromId: fromId,
-            toId: toId,
-            props: {
-              text: edge.label || "",
-              arrowheadEnd: "arrow",
-            },
-          });
-        }
-      });
-    }
-
-    editor.createShapes(newShapes);
-    editor.zoomToFit();
-  };
 
   const clearCanvas = () => {
     if (editor) {
